@@ -8,6 +8,7 @@ import { Badge } from '~components/ui/badge';
 import { X } from 'lucide-react';
 import { useStorage } from '@plasmohq/storage/hook';
 import LockedInChart from '~components/ui/recharts/lockedInChart';
+import { MultiSelect } from '~components/ui/multiSelect';
 
 interface BannedSiteProps {
     siteName: string;
@@ -28,6 +29,14 @@ export default function Settings() {
     const { toast } = useToast();
     const [blockedSites, setBlockedSites] = useStorage<string[]>('blockedSites', (v) => v === undefined ? [] : v);
     const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
+
+    const possibleBlockedSitesList = [
+        { value: "anime", label: "Anime" },
+        { value: "gaming", label: "Gaming" },
+        { value: "gambling", label: "Gambling" },
+        { value: "entertainment", label: "Entertainment" },
+        { value: "reels", label: "Reels" },
+    ];
 
     const addSite = () => {
         if (!siteInputRef.current) return;
@@ -153,6 +162,7 @@ export default function Settings() {
                 {/* Blacklist sites explanation */}
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[40%] h-full'>
                     <span className='text-xl pb-3 font-mono'><span className='text-primary'>Blacklisting</span> by common <span className='text-primary'>topics</span></span>
+                    <MultiSelect options={possibleBlockedSitesList} placeholder='' onValueChange={setBlockedTopics} defaultValue={blockedTopics} />
                 </div>
             </div>
 
