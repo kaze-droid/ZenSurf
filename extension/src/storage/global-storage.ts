@@ -10,8 +10,9 @@ export class GlobalStore {
     private _userGoal: string;
     private _tmrGoal: string;
     private _blockedTopics: string = "blockedTopics";
+    private _walletId: string = "walletId";
 
-    private _store: Store;
+    public _store: Store;
     private _secureStore: SecureStore;
 
     constructor(allSitesTimesKey: string, allBlockedSitesKey: string, accountDetailsKey: string) {
@@ -196,7 +197,8 @@ export class GlobalStore {
 
     // Goal related methods
     public async getUserGoal(): Promise<string | null> {
-        return await this._store.getFromStorage(this._userGoal) || null;
+        const result = await this._store.getFromStorage(this._userGoal);
+        return typeof result === 'string' ? result : null;
     }
 
     public async setUserGoal(goal: string): Promise<void> {
@@ -204,7 +206,8 @@ export class GlobalStore {
     }
 
     public async getTmrGoal(): Promise<string | null> {
-        return await this._store.getFromStorage(this._tmrGoal) || null;
+        const result = await this._store.getFromStorage(this._tmrGoal);
+        return typeof result === 'string' ? result : null;
     }
 
     public async setTmrGoal(goal: string): Promise<void> {
@@ -218,6 +221,15 @@ export class GlobalStore {
     public async getBlockedTopics(): Promise<string[]> {
         const topics = await this._store.getFromStorage(this._blockedTopics);
         return Array.isArray(topics) ? topics : [];
+    }
+
+    public async getWalletId(): Promise<string | null> {
+        const result = await this._store.getFromStorage(this._walletId);
+        return typeof result === 'string' ? result : null;
+    }
+
+    public async setWalletId(walletId: string): Promise<void> {
+        await this._store.setInStorage(this._walletId, walletId);
     }
 
     // TODO: Add validation and getters and setters for each of the other methods

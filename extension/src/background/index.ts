@@ -51,30 +51,50 @@ setInterval(async () => {
 
     // get all sites times
     const allSitesTimes = await globalStore.getAllSitesTimes();
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const today = new Date();
     const todayDate = today.getDate();
-    const todayMonth = today.getMonth();
+    const todayMonth = months[today.getMonth()];
     const todayYear = today.getFullYear();
 
     // get all sites times for today's date
     const todaySitesTimes = allSitesTimes[`${todayDate}-${todayMonth}-${todayYear}`];
-    
-    // Get today's goal, blocked topics, and blocked sites
-    const [userGoal, blockedTopics, blockedSites] = await Promise.all([
+    console.info("Today's sites times:", allSitesTimes, `${todayDate}-${todayMonth}-${todayYear}`);
+    // Get today's goal, blocked topics, blocked sites, and wallet ID
+    const [userGoal, blockedTopics, blockedSites, walletId, paidAmount] = await Promise.all([
         globalStore.getUserGoal(),
         globalStore.getBlockedTopics(),
-        globalStore.getAllBlockedSites()
+        globalStore.getAllBlockedSites(),
+        globalStore.getWalletId(),
+        globalStore._store.getFromStorage('paidAmount')
     ]);
 
+    // Get today's date in MM/DD/YYYY format
+    const todayDateStr = today.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+    });
+
+    // Extract amount if paidAmount exists and is from today
+    const todaysPaidAmount = paidAmount ? (() => {
+        const [amount, date] = paidAmount.split('|');
+        return date === todayDateStr ? amount : null;
+    })() : null;
+
+    console.info("Today's date:", todaySitesTimes);
     console.info("Currently blocked topics:", blockedTopics);
     console.info("Currently blocked sites:", Array.from(blockedSites)); // Convert Set to Array for better logging
+    console.info("Current wallet ID:", walletId);
+    console.info("Today's paid amount:", todaysPaidAmount ? `$${todaysPaidAmount}` : "Not set");
+
     
     if (userGoal) {
         const [goalMinutes, goalDate] = userGoal.split(/(\d{2}\/\d{2}\/\d{4})/);
         const goalMins = parseInt(goalMinutes);
         
         // Calculate total minutes spent today, excluding idle time and unproductive sites
-        const totalMinutes = Array.from(todaySitesTimes.values())
+        const totalMinutes = Object.values(todaySitesTimes)
             .filter(site => {
                 // Exclude idle time and unproductive sites
                 if (site.url === "$idle") return false;
@@ -86,6 +106,26 @@ setInterval(async () => {
             .reduce((total, site) => total + site.totalMinutes, 0);
             
         console.info(`Progress towards goal: ${totalMinutes.toFixed(2)}/${goalMins} minutes (excluding unproductive sites)`);
+
+        // Send total minutes spent today to server
+        const response = await fetch(`${process.env.PLASMO_PUBLIC_SERVER_URL}/new-record`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                wallet_id: walletId,
+                duration_commit: totalMinutes,
+                duration: goalMins,
+                commit_price: todaysPaidAmount ? parseFloat(todaysPaidAmount) : 0.0
+            })
+        });
+        
+        if (!response.ok) {
+            console.error("Failed to send record to server", response);
+        } else {
+            console.log("Record sent successfully");
+        }
     }
     
 }, config.storageBackupIntervalMinutes * 60000);

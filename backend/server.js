@@ -158,11 +158,80 @@ fastify.post("/new-user", async (request, reply) => {
 
 // Used to create a new record in log table
 fastify.post("/new-record", async (request, reply) => {
-    const { id, banned_cat, duration, commit_price } = request.body;
-    const { error } = await supabase
-        .from('logs')
-        .insert({ user_id: id, banned_category: banned_cat, duration: duration, commit_price: commit_price })
-    if (error == null) { console.log("Record creation successful") } else { reply.status(500).send({ error: "Error in creating new record", details: error.message }); }
+  // get user id from users table
+  const { wallet_id, duration_commit, duration, commit_price } = request.body;
+  // round duration_commit to int
+  const roundedDurationCommit = Math.round(duration_commit);
+  // round duration to int
+  const roundedDuration = Math.round(duration);
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('user_id')
+    .eq('wallet_id', wallet_id)
+    .single();
+  if (userError) {
+    return reply.status(500).send({ error: "Error in getting user id", details: userError.message });
+  }
+
+  console.info("User data:", userData);
+
+  // Get today's date in UTC and set time to start of day
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  // Check if record exists for today
+  const { data: existingRecord, error: checkError } = await supabase
+    .from('logs')
+    .select('*')
+    .eq('user_id', userData.user_id)
+    .gte('date', today.toISOString())
+    .lt('date', new Date(today.getTime() + 86400000).toISOString())
+    .single();
+  
+  console.info("Existing record:", existingRecord);
+
+  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
+    return reply.status(500).send({ error: "Error checking existing record", details: checkError.message });
+  }
+
+  let result;
+  if (existingRecord) {
+    // Update existing record using userId and date
+    result = await supabase
+      .from('logs')
+      .update({ 
+        duration_commited: roundedDurationCommit, 
+        duration: roundedDuration, 
+        commit_price: commit_price 
+      })
+      .eq('user_id', userData.user_id)
+      .gte('date', today.toISOString())
+      .lt('date', new Date(today.getTime() + 86400000).toISOString());
+  } else {
+    // Insert new record
+    result = await supabase
+      .from('logs')
+      .insert({ 
+        user_id: userData.user_id, 
+        duration_commited: roundedDurationCommit, 
+        duration: roundedDuration, 
+        commit_price: commit_price 
+      });
+  }
+
+  console.info("Result:", result);
+
+  if (result.error) {
+    return reply.status(500).send({ 
+      error: `Error ${existingRecord ? 'updating' : 'creating'} record`, 
+      details: result.error.message 
+    });
+  }
+
+  reply.send({ 
+    message: `Record ${existingRecord ? 'updated' : 'created'} successfully`,
+    isNewRecord: !existingRecord
+  });
 });
 
 // Used to create a new streak in users table

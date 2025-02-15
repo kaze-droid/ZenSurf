@@ -31,6 +31,8 @@ export default function Settings() {
     const [grantContinueUri, setGrantContinueUri] = useState<string | null>(null);
     const [grantAccessToken, setGrantAccessToken] = useState<string | null>(null);
     const [accessToken, setAccessToken] = useStorage('accessToken', (v) => v === undefined ? null : v);
+    const [paidAmount, setPaidAmount] = useStorage('paidAmount', (v) => v === undefined ? null : v);
+    const [amountPaying, setAmountPaying] = useState<string | null>(null);
     const siteInputRef = useRef<HTMLInputElement | null>(null);
     const userInputRef = useRef<HTMLInputElement | null>(null);
     const userGoalRef = useRef<HTMLInputElement | null>(null);
@@ -259,7 +261,7 @@ export default function Settings() {
             
             setRedirectUrl(response.data.redirectUrl);
             setShowConfirmation(true);
-            
+            setAmountPaying(amount);
             // Open the redirect URL in a new tab
             window.open(response.data.redirectUrl, '_blank');
         } catch (error) {
@@ -275,7 +277,10 @@ export default function Settings() {
         setConfirmationDisabled(true);
         if (confirmed) {
             try {
-                const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-continue-uri`, { grantAccessToken, grantContinueUri});
+                const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-continue-uri`, { 
+                    grantAccessToken, 
+                    grantContinueUri
+                });
                 const accessToken = response.data.access_token;
                 
                 // Get current date in MM/DD/YYYY format
@@ -287,6 +292,11 @@ export default function Settings() {
                 
                 // Save token with date
                 setAccessToken(`${accessToken}|${today}`);
+                
+                // Save the paid amount after successful payment confirmation
+                if (amountPaying) {
+                    setPaidAmount(`${amountPaying}|${today}`);
+                }
                 
                 toast({
                     title: "Payment confirmed",
