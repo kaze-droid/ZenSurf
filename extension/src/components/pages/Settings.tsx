@@ -273,17 +273,52 @@ export default function Settings() {
 
     const handleConfirmation = async (confirmed: boolean) => {
         setConfirmationDisabled(true);
-        // TODO: Store confirmation status
         if (confirmed) {
-            const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-continue-uri`, { grantAccessToken, grantContinueUri});
-            const accessToken = response.data.access_token;
-            setAccessToken(accessToken);
+            try {
+                const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-continue-uri`, { grantAccessToken, grantContinueUri});
+                const accessToken = response.data.access_token;
+                
+                // Get current date in MM/DD/YYYY format
+                const today = new Date().toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit' 
+                });
+                
+                // Save token with date
+                setAccessToken(`${accessToken}|${today}`);
+                
+                toast({
+                    title: "Payment confirmed",
+                    description: "Thank you for your contribution!"
+                });
+            } catch (error) {
+                toast({
+                    variant: "destructive",
+                    title: "Error saving payment status",
+                    description: "Please try again later"
+                });
+            }
+        } else {
+            toast({
+                title: "Payment cancelled",
+                description: "Maybe next time!"
+            });
         }
-        toast({
-            title: confirmed ? "Payment confirmed" : "Payment cancelled",
-            description: confirmed ? "Thank you for your contribution!" : "Maybe next time!"
-        });
     }
+
+    const isTokenValidForToday = (tokenWithDate: string | null) => {
+        if (!tokenWithDate) return false;
+        
+        const [_, date] = tokenWithDate.split('|');
+        const today = new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit' 
+        });
+        
+        return date === today;
+    };
 
     return (
         <div className='space-y-3 flex flex-col w-full h-full'>
@@ -371,55 +406,62 @@ export default function Settings() {
                         <div className='mt-6'>
                             <span className='text-lg font-mono mb-4 block'>Set <span className='text-primary'>Money</span> Amount</span>
                             
-                            <div className='flex space-x-4 items-center'>
-                                {!showConfirmation ? (
-                                    <>
-                                        <div className='relative flex-1 max-w-[14rem]'>
-                                            <Input
-                                                className='h-10 w-full font-serif pl-6'
-                                                type='text'
-                                                placeholder='e.g. 10.50'
-                                                ref={moneyInputRef}
-                                                onKeyDown={event => { if (event.key === 'Enter') validateAndAddMoney() }}
-                                            />
-                                            <span className='absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground'>
-                                                $
-                                            </span>
-                                        </div>
+                            {!isTokenValidForToday(accessToken) ? (
+                                <div className='flex space-x-4 items-center'>
+                                    {!showConfirmation ? (
+                                        <>
+                                            <div className='relative flex-1 max-w-[14rem]'>
+                                                <Input
+                                                    className='h-10 w-full font-serif pl-6'
+                                                    type='text'
+                                                    placeholder='e.g. 10.50'
+                                                    ref={moneyInputRef}
+                                                    onKeyDown={event => { if (event.key === 'Enter') validateAndAddMoney() }}
+                                                />
+                                                <span className='absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground'>
+                                                    $
+                                                </span>
+                                            </div>
 
-                                        <div 
-                                            className="flex cursor-pointer h-9 p-2 items-center transition-all rounded-[4px]
-                                            focus-visible:outline focus-visible:outline-neutral-800
-                                            bg-primary-light hover:bg-primary active:scale-[98%] w-28"
-                                            onClick={validateAndAddMoney}
-                                        >
-                                            <span className="uppercase text-sm flex items-center">
-                                                <RightArrow className="h-5 w-5" />
-                                            </span>
-                                            <span className="uppercase text-sm flex items-center">
-                                                set amount
-                                            </span>
+                                            <div 
+                                                className="flex cursor-pointer h-9 p-2 items-center transition-all rounded-[4px]
+                                                focus-visible:outline focus-visible:outline-neutral-800
+                                                bg-primary-light hover:bg-primary active:scale-[98%] w-28"
+                                                onClick={validateAndAddMoney}
+                                            >
+                                                <span className="uppercase text-sm flex items-center">
+                                                    <RightArrow className="h-5 w-5" />
+                                                </span>
+                                                <span className="uppercase text-sm flex items-center">
+                                                    set amount
+                                                </span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className='flex space-x-4'>
+                                            <button
+                                                className={`px-4 py-2 rounded-md ${confirmationDisabled ? 'bg-gray-300' : 'bg-green-500 hover:bg-green-600'} text-white transition-colors`}
+                                                onClick={() => handleConfirmation(true)}
+                                                disabled={confirmationDisabled}
+                                            >
+                                                Yes, Completed
+                                            </button>
+                                            <button
+                                                className={`px-4 py-2 rounded-md ${confirmationDisabled ? 'bg-gray-300' : 'bg-red-500 hover:bg-red-600'} text-white transition-colors`}
+                                                onClick={() => handleConfirmation(false)}
+                                                disabled={confirmationDisabled}
+                                            >
+                                                No, Cancel
+                                            </button>
                                         </div>
-                                    </>
-                                ) : (
-                                    <div className='flex space-x-4'>
-                                        <button
-                                            className={`px-4 py-2 rounded-md ${confirmationDisabled ? 'bg-gray-300' : 'bg-green-500 hover:bg-green-600'} text-white transition-colors`}
-                                            onClick={() => handleConfirmation(true)}
-                                            disabled={confirmationDisabled}
-                                        >
-                                            Yes, Completed
-                                        </button>
-                                        <button
-                                            className={`px-4 py-2 rounded-md ${confirmationDisabled ? 'bg-gray-300' : 'bg-red-500 hover:bg-red-600'} text-white transition-colors`}
-                                            onClick={() => handleConfirmation(false)}
-                                            disabled={confirmationDisabled}
-                                        >
-                                            No, Cancel
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className='text-sm text-muted-foreground'>
+                                    <p>You've already set your contribution for today.</p>
+                                    <p>Come back tomorrow to set a new amount!</p>
+                                </div>
+                            )}
 
                             {/* Money explanation */}
                             <div className='text-sm text-muted-foreground mt-4'>
