@@ -192,27 +192,35 @@ fastify.put("/new-user-streak", async (request, reply) => {
             });
         }
 
-        // Update the streak count
-        const { data: updateData, error: updateError } = await supabase
+        // Upsert the streak count (update if exists, insert if doesn't exist)
+        const { data: upsertData, error: upsertError } = await supabase
             .from('streak')
-            .update({ streak_count: int_streak_count })
-            .eq('user_id', userData.user_id) // Changed from object syntax to simple key/value
-            .select(); // Added select() to get back updated data
+            .upsert(
+                {
+                    user_id: userData.user_id,
+                    streak_count: int_streak_count
+                },
+                {
+                    onConflict: 'user_id',  // specify the unique constraint
+                    returning: 'minimal'     // or 'representation' if you want the full row back
+                }
+            )
+            .select();
 
-        if (updateError) {
+        if (upsertError) {
             return reply.status(500).send({
-                error: "Error updating streak",
-                details: updateError.message
+                error: "Error upserting streak",
+                details: upsertError.message
             });
         }
 
         return reply.send({
-            message: "Successfully updated streak",
-            updatedData: updateData
+            message: "Successfully upserted streak",
+            updatedData: upsertData
         });
     } catch (err) {
         return reply.status(500).send({
-            error: "Error in updating user streak",
+            error: "Error in upserting user streak",
             details: err.message
         });
     }
