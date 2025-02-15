@@ -7,6 +7,7 @@ function getGifFilename(state) {
         "confused": "confused.gif",
         "neutral": "neutral.gif",
         "idle": "idle.gif",
+        "streak": "streak.gif",
     };
 
     return gifMapping[state] || "neutral.gif";
