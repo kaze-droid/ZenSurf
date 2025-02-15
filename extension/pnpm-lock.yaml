@@ -32,12 +32,12 @@ importers:
       '@radix-ui/react-toast':
         specifier: ^1.2.6
         version: 1.2.6(@types/react-dom@18.2.18)(@types/react@18.2.48)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@reduxjs/toolkit':
-        specifier: ^2.5.1
-        version: 2.5.1(react-redux@9.2.0(@types/react@18.2.48)(react@18.2.0)(redux@5.0.1))(react@18.2.0)
       '@radix-ui/react-tooltip':
         specifier: ^1.1.8
         version: 1.1.8(@types/react-dom@18.2.18)(@types/react@18.2.48)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@reduxjs/toolkit':
+        specifier: ^2.5.1
+        version: 2.5.1(react-redux@9.2.0(@types/react@18.2.48)(react@18.2.0)(redux@5.0.1))(react@18.2.0)
       '@types/firefox-webext-browser':
         specifier: ^120.0.4
         version: 120.0.4
@@ -86,18 +86,15 @@ importers:
       recharts:
         specifier: ^2.15.1
         version: 2.15.1(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-<<<<<<< HEAD
       redux-persist-webextension-storage:
         specifier: ^1.0.2
         version: 1.0.2
-=======
       separator:
         specifier: ^0.1.0
         version: 0.1.0
       shadcn:
         specifier: ^2.3.0
         version: 2.3.0(typescript@5.3.3)
->>>>>>> main
       tailwind-merge:
         specifier: ^3.0.1
         version: 3.0.1
@@ -1946,7 +1943,9 @@ packages:
       '@types/react-dom':
         optional: true
 
-<<<<<<< HEAD
+  '@radix-ui/rect@1.1.0':
+    resolution: {integrity: sha512-A9+lCBZoaMJlVKcRBz2YByCG+Cp2t6nAnMnNba+XiWxnj6r4JUFqfsgwocMBZU9LPtdxC6wB56ySYpc7LQIoJg==}
+
   '@reduxjs/toolkit@2.5.1':
     resolution: {integrity: sha512-UHhy3p0oUpdhnSxyDjaRDYaw8Xra75UiLbCiRozVPHjfDwNYkh0TsVm/1OmTW8Md+iDAJmYPWUKMvsMc2GtpNg==}
     peerDependencies:
@@ -1957,10 +1956,6 @@ packages:
         optional: true
       react-redux:
         optional: true
-=======
-  '@radix-ui/rect@1.1.0':
-    resolution: {integrity: sha512-A9+lCBZoaMJlVKcRBz2YByCG+Cp2t6nAnMnNba+XiWxnj6r4JUFqfsgwocMBZU9LPtdxC6wB56ySYpc7LQIoJg==}
->>>>>>> main
 
   '@sec-ant/readable-stream@0.4.1':
     resolution: {integrity: sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg==}
@@ -3981,7 +3976,6 @@ packages:
     engines: {node: '>=0.6.0', teleport: '>=0.2.0'}
     deprecated: |-
       You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
-
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
   qs@2.4.2:
@@ -4291,10 +4285,6 @@ packages:
     resolution: {integrity: sha512-ji9qxRnOVfcuLDySj9qzhGSEFVobyt1kIOSkj1qZzYLzq7Tos/oUUWvotUPQLlrsidqsK6tBH89Bc9kL5zHA6w==}
     deprecated: 'Modern JS already guarantees Array#sort() is a stable sort, so this library is deprecated. See the compatibility table on MDN: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#browser_compatibility'
 
-<<<<<<< HEAD
-  stream-browserify@3.0.0:
-    resolution: {integrity: sha512-H73RAHsVBapbim0tU2JwwOiXUj+fikfiaoYAKHF3VJfA0pe2BCzkhAHBlLG6REzE+2WNZcxOXjK7lkso+9euLA==}
-=======
   statehood@1.2.0:
     resolution: {integrity: sha512-EutCEWz9Np096V/3DObN6gv9ADH3rJS4/rcvP1/vl3E1KdisZmIP/KEkrWlxklpCyXSfjP7phs79gidN6QMzXQ==}
     engines: {node: '>=0.10.30'}
@@ -4303,7 +4293,9 @@ packages:
   stdin-discarder@0.1.0:
     resolution: {integrity: sha512-xhV7w8S+bUwlPTb4bAOUQhv8/cSS5offJuX8GQGq32ONF0ZtDWKfkdomM3HMRA+LhX6um/FZ0COqlwsjD53LeQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
->>>>>>> main
+
+  stream-browserify@3.0.0:
+    resolution: {integrity: sha512-H73RAHsVBapbim0tU2JwwOiXUj+fikfiaoYAKHF3VJfA0pe2BCzkhAHBlLG6REzE+2WNZcxOXjK7lkso+9euLA==}
 
   string-width@4.2.3:
     resolution: {integrity: sha512-wKyQRQpjJ0sIp62ErSZdGsjMJWsap5oRNihHhu6G7JVO/9jIB6UyevL+tXuOqrng8j/cxKTWyWUwvSTriiZz/g==}
@@ -4316,13 +4308,10 @@ packages:
   string_decoder@1.3.0:
     resolution: {integrity: sha512-hkRX8U1WjJFd8LsDJ2yQ/wWWxaopEsABU1XfkM8A+j0+85JAGppt16cr1Whg6KIbb4okU6Mql6BOj+uup/wKeA==}
 
-<<<<<<< HEAD
-=======
   stringify-object@5.0.0:
     resolution: {integrity: sha512-zaJYxz2FtcMb4f+g60KsRNFOpVMUyuJgA51Zi5Z1DOTC3S59+OQiVOzE9GZt0x72uBGWKsQIuBKeF9iusmKFsg==}
     engines: {node: '>=14.16'}
 
->>>>>>> main
   strip-ansi@6.0.1:
     resolution: {integrity: sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A==}
     engines: {node: '>=8'}
@@ -4510,12 +4499,6 @@ packages:
     peerDependencies:
       browserslist: '>= 4.21.0'
 
-<<<<<<< HEAD
-  use-sync-external-store@1.4.0:
-    resolution: {integrity: sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-=======
   use-callback-ref@1.3.3:
     resolution: {integrity: sha512-jQL3lRnocaFtu3V00JToYz/4QkNWswxijDaCVNZRiRTO3HQDLsdu1ZtmIUvV4yPp+rvWm5j0y0TG/S61cuijTg==}
     engines: {node: '>=10'}
@@ -4535,7 +4518,11 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
->>>>>>> main
+
+  use-sync-external-store@1.4.0:
+    resolution: {integrity: sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
@@ -6738,7 +6725,8 @@ snapshots:
       '@types/react': 18.2.48
       '@types/react-dom': 18.2.18
 
-<<<<<<< HEAD
+  '@radix-ui/rect@1.1.0': {}
+
   '@reduxjs/toolkit@2.5.1(react-redux@9.2.0(@types/react@18.2.48)(react@18.2.0)(redux@5.0.1))(react@18.2.0)':
     dependencies:
       immer: 10.1.1
@@ -6748,9 +6736,6 @@ snapshots:
     optionalDependencies:
       react: 18.2.0
       react-redux: 9.2.0(@types/react@18.2.48)(react@18.2.0)(redux@5.0.1)
-=======
-  '@radix-ui/rect@1.1.0': {}
->>>>>>> main
 
   '@sec-ant/readable-stream@0.4.1': {}
 
@@ -9042,12 +9027,6 @@ snapshots:
 
   stable@0.1.8: {}
 
-<<<<<<< HEAD
-  stream-browserify@3.0.0:
-    dependencies:
-      inherits: 2.0.4
-      readable-stream: 3.6.2
-=======
   statehood@1.2.0:
     dependencies:
       boom: 2.10.1
@@ -9059,7 +9038,11 @@ snapshots:
   stdin-discarder@0.1.0:
     dependencies:
       bl: 5.1.0
->>>>>>> main
+
+  stream-browserify@3.0.0:
+    dependencies:
+      inherits: 2.0.4
+      readable-stream: 3.6.2
 
   string-width@4.2.3:
     dependencies:
@@ -9077,15 +9060,12 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
 
-<<<<<<< HEAD
-=======
   stringify-object@5.0.0:
     dependencies:
       get-own-enumerable-keys: 1.0.0
       is-obj: 3.0.0
       is-regexp: 3.1.0
 
->>>>>>> main
   strip-ansi@6.0.1:
     dependencies:
       ansi-regex: 5.0.1
@@ -9302,11 +9282,6 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-<<<<<<< HEAD
-  use-sync-external-store@1.4.0(react@18.2.0):
-    dependencies:
-      react: 18.2.0
-=======
   use-callback-ref@1.3.3(@types/react@18.2.48)(react@18.2.0):
     dependencies:
       react: 18.2.0
@@ -9321,7 +9296,10 @@ snapshots:
       tslib: 2.8.1
     optionalDependencies:
       '@types/react': 18.2.48
->>>>>>> main
+
+  use-sync-external-store@1.4.0(react@18.2.0):
+    dependencies:
+      react: 18.2.0
 
   util-deprecate@1.0.2: {}
 

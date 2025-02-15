@@ -24,8 +24,11 @@ const BannedSite = ({ siteName, onRemove }: BannedSiteProps) => (
 );
 
 export default function Settings() {
+    const [userGoal, setUserGoal] = useStorage('userGoal', (v) => v === undefined ? "" : v);
+    const [tmrGoal, setTmrGoal] = useStorage('tmrGoal', (v) => v === undefined ? "" : v);
     const siteInputRef = useRef<HTMLInputElement | null>(null);
     const userInputRef = useRef<HTMLInputElement | null>(null);
+    const userGoalRef = useRef<HTMLInputElement | null>(null);
     const { toast } = useToast();
     const [blockedSites, setBlockedSites] = useStorage<string[]>('blockedSites', (v) => v === undefined ? [] : v);
     const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
@@ -84,7 +87,7 @@ export default function Settings() {
 
         const userInput = userInputRef.current?.value;
 
-        if (!userInput || !userInput.includes('https://ilp.interledger-test.dev/')) {
+        if (!userInput || !userInput.startsWith('https://ilp.interledger-test.dev/')) {
             toast({
                 variant: "destructive",
                 title: 'Uh oh! Something went wrong',
@@ -119,6 +122,94 @@ export default function Settings() {
         }
     }
 
+    const addGoal = () => {
+        // Get current date and format it consistently
+        const currentDate = new Date();
+        const today = currentDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const tomorrow = new Date(currentDate);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowDate = tomorrow.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+        // Extract dates from existing goals if they exist
+        const userGoalDate = userGoal ? userGoal.split(/(\d{2}\/\d{2}\/\d{4})/)[1] : null;
+        const tmrGoalDate = tmrGoal ? tmrGoal.split(/(\d{2}\/\d{2}\/\d{4})/)[1] : null;
+
+        // Check if goals need to be updated based on dates
+        if (userGoalDate && userGoalDate !== today) {
+            // Today's goal is outdated, shift tomorrow's goal to today if it exists
+            if (tmrGoalDate === today) {
+                // Tomorrow's goal becomes today's goal
+                setUserGoal(tmrGoal);
+                setTmrGoal(null);
+            } else {
+                // Clear outdated goal
+                setUserGoal(null);
+            }
+        }
+
+        if (tmrGoalDate && tmrGoalDate !== tomorrowDate) {
+            // Tomorrow's goal is outdated, clear it
+            setTmrGoal(null);
+        }
+
+        // Now handle the new goal input
+        if (!userGoalRef.current?.value) {
+            toast({
+                variant: "destructive",
+                title: 'Please enter a valid wallet address',
+                description: `Invalid User Input: must be of format https://ilp.interledger-test.dev/`
+            });
+            return;
+        }
+
+        // Set the new goal based on what's missing
+        if (!userGoal) {
+            // No today's goal, set it for today
+            setUserGoal(userGoalRef.current.value + today);
+        } else if (!tmrGoal) {
+            // Today's goal exists, set tomorrow's goal
+            setTmrGoal(userGoalRef.current.value + tomorrowDate);
+        } else {
+            toast({
+                variant: "destructive",
+                title: 'Oops you cannot modify the goal for today and tomorrow at the same time',
+                description: `Both today's and tomorrow's goals are already set`
+            });
+        }
+    }
+
+    const validateAndAddGoal = () => {
+        if (!userGoalRef.current?.value) {
+            toast({
+                variant: "destructive",
+                title: 'Please enter a goal',
+                description: "You need to specify a time goal in minutes"
+            });
+            return;
+        }
+
+        const goalValue = userGoalRef.current.value;
+        // Check if input is a valid positive number
+        if (isNaN(Number(goalValue)) || Number(goalValue) <= 0) {
+            toast({
+                variant: "destructive",
+                title: 'Invalid goal format',
+                description: "Please enter a positive number of minutes"
+            });
+            return;
+        }
+
+        addGoal();
+    }
+
+    const removeTmrGoal = () => {
+        setTmrGoal(null);
+        toast({
+            title: "Goal removed",
+            description: "Tomorrow's goal has been removed"
+        });
+    }
+
     return (
         <div className='space-y-3 flex flex-col w-full h-full'>
             <div className='flex space-x-3 w-full h-[50%]'>
@@ -126,12 +217,82 @@ export default function Settings() {
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[70%] h-full'>
                     <span className='text-xl pb-3 font-mono'><span className='text-primary'>Digital Wallet</span> information</span>
 
+                    {/* Wallet Input */}
                     <Input
-                        className='h-10 w-56 font-serif'
-                        type='text' placeholder='e.g. youtube.com'
+                        className='h-10 w-56 font-serif mb-4'
+                        type='text' placeholder='e.g. https://ilp.interledger-test.dev/alice'
                         ref={userInputRef}
                         onKeyDown={event => { if (event.key === 'Enter') addUser() }} />
 
+                    {/* Goals Section */}
+                    <div className='mt-6'>
+                        <span className='text-lg font-mono mb-4 block'>Daily <span className='text-primary'>Goals</span></span>
+                        
+                        {/* Display current goals */}
+                        <div className='flex space-x-8 mb-4'>
+                            <div className='flex flex-col space-y-2'>
+                                <span className='text-sm font-medium'>Today's Goal</span>
+                                {userGoal ? (
+                                    <Badge variant='outline' className='px-4 py-2'>
+                                        {userGoal.split(/(\d{2}\/\d{2}\/\d{4})/)[0]} minutes
+                                    </Badge>
+                                ) : (
+                                    <span className='text-muted-foreground italic'>No goal set</span>
+                                )}
+                            </div>
+                            
+                            <div className='flex flex-col space-y-2'>
+                                <span className='text-sm font-medium'>Tomorrow's Goal</span>
+                                {tmrGoal ? (
+                                    <Badge variant='outline' className='px-4 py-2 pr-2 flex items-center justify-between'>
+                                        <span>{tmrGoal.split(/(\d{2}\/\d{2}\/\d{4})/)[0]} minutes</span>
+                                        <X 
+                                            className='ml-2 h-4 w-4 cursor-pointer hover:text-destructive transition-colors'
+                                            onClick={removeTmrGoal}
+                                        />
+                                    </Badge>
+                                ) : (
+                                    <span className='text-muted-foreground italic'>No goal set</span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Goal input section */}
+                        <div className='flex space-x-4 items-center'>
+                            <div className='relative flex-1 max-w-[14rem]'>
+                                <Input
+                                    className='h-10 w-full font-serif pr-16'
+                                    type='text'
+                                    placeholder='e.g. 30'
+                                    ref={userGoalRef}
+                                    onKeyDown={event => { if (event.key === 'Enter') validateAndAddGoal() }}
+                                />
+                                <span className='absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground'>
+                                    minutes
+                                </span>
+                            </div>
+
+                            <div 
+                                className="flex cursor-pointer h-9 p-2 items-center transition-all rounded-[4px]
+                                focus-visible:outline focus-visible:outline-neutral-800
+                                bg-primary-light hover:bg-primary active:scale-[98%] w-28"
+                                onClick={validateAndAddGoal}
+                            >
+                                <span className="uppercase text-sm flex items-center">
+                                    <RightArrow className="h-5 w-5" />
+                                </span>
+                                <span className="uppercase text-sm flex items-center">
+                                    set goal
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Goal explanation */}
+                        <div className='text-sm text-muted-foreground mt-4'>
+                            <p>Goals will automatically update at midnight.</p>
+                            <p>You can set goals for today and tomorrow.</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[30%] h-full'>
