@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import { Input } from '~components/ui/input'
 import { RightArrow } from '~components/icons';
 import { validateAndExtractDomain } from '~utils/extract-domain';
@@ -29,9 +29,13 @@ export default function Settings() {
     const siteInputRef = useRef<HTMLInputElement | null>(null);
     const userInputRef = useRef<HTMLInputElement | null>(null);
     const userGoalRef = useRef<HTMLInputElement | null>(null);
+    const moneyInputRef = useRef<HTMLInputElement | null>(null);
     const { toast } = useToast();
     const [blockedSites, setBlockedSites] = useStorage<string[]>('blockedSites', (v) => v === undefined ? [] : v);
     const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [confirmationDisabled, setConfirmationDisabled] = useState(false);
+    const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
     const possibleBlockedSitesList = [
         { value: "anime", label: "Anime" },
@@ -210,6 +214,54 @@ export default function Settings() {
         });
     }
 
+    const validateAndAddMoney = async () => {
+        if (!moneyInputRef.current?.value) {
+            toast({
+                variant: "destructive",
+                title: 'Please enter an amount',
+                description: "You need to specify a dollar amount"
+            });
+            return;
+        }
+
+        // Remove $ if present and trim whitespace
+        const amount = moneyInputRef.current.value.replace('$', '').trim();
+        
+        // Check if it's a valid positive number with up to 2 decimal places
+        if (!/^\d+(\.\d{0,2})?$/.test(amount) || parseFloat(amount) <= 0) {
+            toast({
+                variant: "destructive",
+                title: 'Invalid amount format',
+                description: "Please enter a valid positive dollar amount (e.g. $10 or $10.50)"
+            });
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/transfer-money`, { amount });
+            setRedirectUrl(response.data.redirectUrl);
+            setShowConfirmation(true);
+            
+            // Open the redirect URL in a new tab
+            window.open(response.data.redirectUrl, '_blank');
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: 'Transfer failed',
+                description: "Failed to initiate money transfer. Please try again."
+            });
+        }
+    }
+
+    const handleConfirmation = (confirmed: boolean) => {
+        setConfirmationDisabled(true);
+        // TODO: Store confirmation status
+        toast({
+            title: confirmed ? "Payment confirmed" : "Payment cancelled",
+            description: confirmed ? "Thank you for your contribution!" : "Maybe next time!"
+        });
+    }
+
     return (
         <div className='space-y-3 flex flex-col w-full h-full'>
             <div className='flex space-x-3 w-full h-[50%]'>
@@ -284,6 +336,70 @@ export default function Settings() {
                                 <span className="uppercase text-sm flex items-center">
                                     set goal
                                 </span>
+                            </div>
+                        </div>
+
+                        {/* Money Input Section */}
+                        <div className='mt-6'>
+                            <span className='text-lg font-mono mb-4 block'>Set <span className='text-primary'>Money</span> Amount</span>
+                            
+                            <div className='flex space-x-4 items-center'>
+                                {!showConfirmation ? (
+                                    <>
+                                        <div className='relative flex-1 max-w-[14rem]'>
+                                            <Input
+                                                className='h-10 w-full font-serif pl-6'
+                                                type='text'
+                                                placeholder='e.g. 10.50'
+                                                ref={moneyInputRef}
+                                                onKeyDown={event => { if (event.key === 'Enter') validateAndAddMoney() }}
+                                            />
+                                            <span className='absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground'>
+                                                $
+                                            </span>
+                                        </div>
+
+                                        <div 
+                                            className="flex cursor-pointer h-9 p-2 items-center transition-all rounded-[4px]
+                                            focus-visible:outline focus-visible:outline-neutral-800
+                                            bg-primary-light hover:bg-primary active:scale-[98%] w-28"
+                                            onClick={validateAndAddMoney}
+                                        >
+                                            <span className="uppercase text-sm flex items-center">
+                                                <RightArrow className="h-5 w-5" />
+                                            </span>
+                                            <span className="uppercase text-sm flex items-center">
+                                                set amount
+                                            </span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className='flex space-x-4'>
+                                        <button
+                                            className={`px-4 py-2 rounded-md ${confirmationDisabled ? 'bg-gray-300' : 'bg-green-500 hover:bg-green-600'} text-white transition-colors`}
+                                            onClick={() => handleConfirmation(true)}
+                                            disabled={confirmationDisabled}
+                                        >
+                                            Yes, Completed
+                                        </button>
+                                        <button
+                                            className={`px-4 py-2 rounded-md ${confirmationDisabled ? 'bg-gray-300' : 'bg-red-500 hover:bg-red-600'} text-white transition-colors`}
+                                            onClick={() => handleConfirmation(false)}
+                                            disabled={confirmationDisabled}
+                                        >
+                                            No, Cancel
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Money explanation */}
+                            <div className='text-sm text-muted-foreground mt-4'>
+                                <p>Set an amount to contribute to your goal.</p>
+                                <p>This will be used for your daily challenges.</p>
+                                {showConfirmation && !confirmationDisabled && (
+                                    <p className='text-primary mt-2'>Please confirm if you completed the payment in the new tab.</p>
+                                )}
                             </div>
                         </div>
 
