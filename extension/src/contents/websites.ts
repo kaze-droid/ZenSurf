@@ -1,145 +1,171 @@
 
 const productivityAndCodingSites = [
-    // Project Management & Collaboration
-    "notion.so",
-    "trello.com",
-    "asana.com",
-    "monday.com",
-    "clickup.com",
-    "slack.com",
-    "basecamp.com",
-    "jira.com",
-    "teamwork.com",
-    "confluence.com",
-    "proofhub.com",
-  
-    // Communication & Video Calls
-    "zoom.us",
-    "meet.google.com",
-    "calendar.google.com",
-    "skype.com",
-    "webex.com",
-    "whereby.com",
-    "discord.com",
-    "microsoftteams.com",
-  
-    // Cloud Storage & File Sharing
-    "drive.google.com",
-    "dropbox.com",
-    "box.com",
-    "onedrive.live.com",
-    "mega.io",
-    "pcloud.com",
-  
-    // Notes & Writing
-    "docs.google.com",
-    "sheets.google.com",
-    "slides.google.com",
-    "keep.google.com",
-    "evernote.com",
-    "workflowy.com",
-    "bear.app",
-    "simplenote.com",
-    "goodnotes.com",
-    "zotero.org",
-  
-    // Task & Time Management
-    "todoist.com",
-    "ticktick.com",
-    "microsoft.com/en-us/microsoft-365/onenote",
-    "pomofocus.io",
-    "rescuetime.com",
-    "focusmate.com",
-    "clockify.me",
-    "toggl.com",
-    "forestapp.cc",
-  
-    // Learning & Research
-    "coursera.org",
-    "udemy.com",
-    "khanacademy.org",
-    "edx.org",
-    "brilliant.org",
-    "duolingo.com",
-    "skillshare.com",
-    "lynda.com",
-    "mitopencourseware.org",
-    "futurelearn.com",
-    "openai.com/research",
-    "arxiv.org",
-  
-    // AI & Research Tools
-    "chat.openai.com",
-    "bard.google.com",
-    "perplexity.ai",
-    "phind.com",
-    "wolframalpha.com",
-    "deepl.com",
-    "grammarly.com",
-    "hemingwayapp.com",
-  
-    // Coding & Developer Platforms
-    "github.com",
-    "gitlab.com",
-    "bitbucket.org",
-    "codepen.io",
-    "jsfiddle.net",
-    "replit.com",
-    "stackblitz.com",
-    "codesandbox.io",
-    "glitch.com",
-    "leetcode.com",
-    "codewars.com",
-    "hackerrank.com",
-    "topcoder.com",
-    "geeksforgeeks.org",
-    "dev.to",
-    "hashnode.com",
-    "stackoverflow.com",
-    "w3schools.com",
-    "mdn.dev",
-    "freecodecamp.org",
-    "pluralsight.com",
-  
-    // API & Documentation
-    "postman.com",
-    "rapidapi.com",
-    "swagger.io",
-    "devdocs.io",
-    "jsonplaceholder.typicode.com",
-    "mockaroo.com",
-    "reqres.in",
-  
-    // Cloud & DevOps
-    "aws.amazon.com",
-    "cloud.google.com",
-    "azure.microsoft.com",
-    "netlify.com",
-    "vercel.com",
-    "heroku.com",
-    "firebase.google.com",
-    "render.com",
-    "railway.app",
-    "supabase.com",
-    "digitalocean.com",
-    "linode.com",
-    "kubernetes.io",
-    "docker.com",
-  
-    // Miscellaneous Productivity
-    "canva.com",
-    "miro.com",
-    "figma.com",
-    "loom.com",
-    "smallpdf.com",
-    "pdfescape.com",
-    "ilovepdf.com",
-    "tinywow.com",
-    "remove.bg",
-    "unsplash.com",
-    "pexels.com",
-    "pixabay.com"
-  ];
+  // Project Management & Collaboration
+  "notion.so",
+  "trello.com",
+  "asana.com",
+  "monday.com",
+  "clickup.com",
+  "slack.com",
+  "basecamp.com",
+  "jira.com",
+  "teamwork.com",
+  "confluence.com",
+  "proofhub.com",
+
+  // Communication & Video Calls
+  "zoom.us",
+  "meet.google.com",
+  "calendar.google.com",
+  "skype.com",
+  "webex.com",
+  "whereby.com",
+  "discord.com",
+  "microsoftteams.com",
+
+  // Cloud Storage & File Sharing
+  "drive.google.com",
+  "dropbox.com",
+  "box.com",
+  "onedrive.live.com",
+  "mega.io",
+  "pcloud.com",
+
+  // Notes & Writing
+  "docs.google.com",
+  "sheets.google.com",
+  "slides.google.com",
+  "keep.google.com",
+  "evernote.com",
+  "workflowy.com",
+  "bear.app",
+  "simplenote.com",
+  "goodnotes.com",
+  "zotero.org",
+
+  // Task & Time Management
+  "todoist.com",
+  "ticktick.com",
+  "microsoft.com/en-us/microsoft-365/onenote",
+  "pomofocus.io",
+  "rescuetime.com",
+  "focusmate.com",
+  "clockify.me",
+  "toggl.com",
+  "forestapp.cc",
+
+  // Learning & Research
+  "coursera.org",
+  "udemy.com",
+  "khanacademy.org",
+  "edx.org",
+  "brilliant.org",
+  "duolingo.com",
+  "skillshare.com",
+  "lynda.com",
+  "mitopencourseware.org",
+  "futurelearn.com",
+  "openai.com/research",
+  "arxiv.org",
+
+  // AI & Research Tools
+  "chat.openai.com",
+  "chatgpt.com",
+  "bard.google.com",
+  "perplexity.ai",
+  "phind.com",
+  "wolframalpha.com",
+  "deepl.com",
+  "grammarly.com",
+  "hemingwayapp.com",
+  "huggingface.co",
+  "replicate.com",
+  "runpod.io",
+  "forefront.ai",
+  "together.ai",
+  "playgroundai.com",
+  "stablediffusionweb.com",
+  "midjourney.com",
+  "tensorboard.dev",
+
+  // Coding & Developer Platforms
+  "github.com",
+  "gitlab.com",
+  "bitbucket.org",
+  "codepen.io",
+  "jsfiddle.net",
+  "replit.com",
+  "stackblitz.com",
+  "codesandbox.io",
+  "glitch.com",
+  "leetcode.com",
+  "codewars.com",
+  "hackerrank.com",
+  "topcoder.com",
+  "geeksforgeeks.org",
+  "dev.to",
+  "hashnode.com",
+  "stackoverflow.com",
+  "w3schools.com",
+  "mdn.dev",
+  "freecodecamp.org",
+  "pluralsight.com",
+  "github.dev",
+  "github.com/codespaces",
+  "rentry.co",
+  "godbolt.org",
+  "jupyter.org",
+
+  // API & Documentation
+  "postman.com",
+  "rapidapi.com",
+  "swagger.io",
+  "devdocs.io",
+  "jsonplaceholder.typicode.com",
+  "mockaroo.com",
+  "reqres.in",
+  "openai.com/api",
+  "huggingface.co/docs",
+  "pypi.org",
+  "npmjs.com",
+  "pkg.go.dev",
+  "rubygems.org",
+
+  // Cloud & DevOps
+  "aws.amazon.com",
+  "cloud.google.com",
+  "azure.microsoft.com",
+  "netlify.com",
+  "vercel.com",
+  "heroku.com",
+  "firebase.google.com",
+  "render.com",
+  "railway.app",
+  "supabase.com",
+  "digitalocean.com",
+  "linode.com",
+  "kubernetes.io",
+  "docker.com",
+  "grafana.com",
+  "prometheus.io",
+  "terraform.io",
+  "ansible.com",
+
+  // Miscellaneous Productivity
+  "canva.com",
+  "miro.com",
+  "figma.com",
+  "loom.com",
+  "smallpdf.com",
+  "pdfescape.com",
+  "ilovepdf.com",
+  "tinywow.com",
+  "remove.bg",
+  "unsplash.com",
+  "pexels.com",
+  "pixabay.com"
+];
+
 
 const unproductiveSites = [
     // Social Media & Microblogging
@@ -275,5 +301,85 @@ const unproductiveSites = [
     "slither.io"
   ];
   
+  const neutralSites = [
+    // Search Engines
+    "google.com",
+    "bing.com",
+    "duckduckgo.com",
+    "yahoo.com",
+  
+    // News & Information
+    "bbc.com",
+    "cnn.com",
+    "reuters.com",
+    "nytimes.com",
+    "theguardian.com",
+    "wsj.com",
+  
+    // Online Tools & Utilities
+    "wolframalpha.com",
+    "calculator.com",
+    "weather.com",
+    "timeanddate.com",
+    "canva.com",
+    "unsplash.com",
+    "pexels.com",
+    "pixabay.com",
+  
+    // Educational Resources
+    "wikipedia.org",
+    "britannica.com",
+    "dictionary.com",
+    "thesaurus.com",
+  
+    // Technology & Software
+    "techcrunch.com",
+    "github.com",
+    "bitbucket.org",
+    "gitlab.com",
+  
+    // Cloud Services
+    "dropbox.com",
+    "onedrive.live.com",
+    "google.com/drive",
+    "box.com",
+  
+    // Productivity
+    "evernote.com",
+    "workflowy.com",
+    "simplenote.com",
+    "notion.so",
+    "trello.com",
+    "asana.com",
+    "monday.com",
+    "slack.com",
+  
+    // Community & Collaboration
+    "stackoverflow.com",
+    "dev.to",
+    "hashnode.com",
+    "quora.com",
+    "reddit.com",
+    "medium.com",
+  
+    // Online Storage & File Sharing
+    "drive.google.com",
+    "dropbox.com",
+    "box.com",
+    "pcloud.com",
+  
+    // Photography & Design Tools
+    "flickr.com",
+    "500px.com",
+    "pixlr.com",
+    "canva.com",
+  
+    // Miscellaneous
+    "archive.org",
+    "imdb.com",
+    "goodreads.com",
+    "howstuffworks.com"
+];
 
-export {productivityAndCodingSites, unproductiveSites}
+
+export {productivityAndCodingSites, unproductiveSites, neutralSites}
