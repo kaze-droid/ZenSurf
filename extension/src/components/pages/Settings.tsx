@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useRef, useState, useEffect } from 'react'
 import { Input } from '~components/ui/input'
 import { RightArrow } from '~components/icons';
 import { validateAndExtractDomain } from '~utils/extract-domain';
@@ -9,6 +9,7 @@ import { X } from 'lucide-react';
 import { useStorage } from '@plasmohq/storage/hook';
 import { MultiSelect } from '~components/ui/multiSelect';
 import axios from 'axios';
+import { GlobalStore } from '~storage/global-storage';
 
 interface BannedSiteProps {
     siteName: string;
@@ -26,6 +27,10 @@ const BannedSite = ({ siteName, onRemove }: BannedSiteProps) => (
 export default function Settings() {
     const [userGoal, setUserGoal] = useStorage('userGoal', (v) => v === undefined ? "" : v);
     const [tmrGoal, setTmrGoal] = useStorage('tmrGoal', (v) => v === undefined ? "" : v);
+    const [walletId, setWalletId] = useStorage('walletId', (v) => v === undefined ? "" : v);
+    const [grantContinueUri, setGrantContinueUri] = useState<string | null>(null);
+    const [grantAccessToken, setGrantAccessToken] = useState<string | null>(null);
+    const [accessToken, setAccessToken] = useStorage('accessToken', (v) => v === undefined ? null : v);
     const siteInputRef = useRef<HTMLInputElement | null>(null);
     const userInputRef = useRef<HTMLInputElement | null>(null);
     const userGoalRef = useRef<HTMLInputElement | null>(null);
@@ -107,6 +112,7 @@ export default function Settings() {
 
             // Clear input on success
             if (userInputRef.current) {
+                setWalletId(userInputRef.current.value);
                 userInputRef.current.value = '';
             }
 
@@ -238,7 +244,19 @@ export default function Settings() {
         }
 
         try {
-            const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/transfer-money`, { amount });
+            if (!walletId.startsWith("https://ilp.interledger-test.dev/")) {
+                toast({
+                    variant: "destructive",
+                    title: 'Invalid wallet ID',
+                    description: "Please enter a valid wallet ID"
+                });
+                return
+            }
+            const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/initiate-payment`, {senderWallet: walletId, receiverWallet: "https://ilp.interledger-test.dev/1b62a0b8", amount: parseFloat(amount) * 100 });
+            
+            setGrantContinueUri(response.data.grantContinueUri);
+            setGrantAccessToken(response.data.grantAccessToken);
+            
             setRedirectUrl(response.data.redirectUrl);
             setShowConfirmation(true);
             
@@ -253,9 +271,14 @@ export default function Settings() {
         }
     }
 
-    const handleConfirmation = (confirmed: boolean) => {
+    const handleConfirmation = async (confirmed: boolean) => {
         setConfirmationDisabled(true);
         // TODO: Store confirmation status
+        if (confirmed) {
+            const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-continue-uri`, { grantAccessToken, grantContinueUri});
+            const accessToken = response.data.access_token;
+            setAccessToken(accessToken);
+        }
         toast({
             title: confirmed ? "Payment confirmed" : "Payment cancelled",
             description: confirmed ? "Thank you for your contribution!" : "Maybe next time!"
@@ -270,11 +293,16 @@ export default function Settings() {
                     <span className='text-xl pb-3 font-mono'><span className='text-primary'>Digital Wallet</span> information</span>
 
                     {/* Wallet Input */}
-                    <Input
-                        className='h-10 w-56 font-serif mb-4'
-                        type='text' placeholder='e.g. https://ilp.interledger-test.dev/alice'
-                        ref={userInputRef}
-                        onKeyDown={event => { if (event.key === 'Enter') addUser() }} />
+                    <div className='relative'>
+                        <Input
+                            className='h-10 w-56 font-serif mb-4'
+                            type='text'
+                            placeholder={walletId.startsWith("https://ilp.interledger-test.dev/") ? "Wallet configured: " + walletId : "e.g. https://ilp.interledger-test.dev/alice"}
+                            ref={userInputRef}
+                            disabled={walletId.startsWith("https://ilp.interledger-test.dev/")}
+                            onKeyDown={event => { if (event.key === 'Enter') addUser() }}
+                        />
+                    </div>
 
                     {/* Goals Section */}
                     <div className='mt-6'>

@@ -279,6 +279,20 @@ fastify.post('/initiate-payment', async (request, reply) => {
     }
 });
 
+
+fastify.post("/get-continue-uri", async (request, reply) => {
+    const { grantAccessToken, grantContinueUri } = request.body;
+    
+    const client = await createAuthenticatedClient({
+        walletAddressUrl: CLIENT_WALLET,
+        privateKey: WALLET_PRIVATE_KEY,
+        keyId: WALLET_KEY_ID,
+    });
+
+    const continueUri = await client.grant.continue({ url: grantContinueUri, accessToken: grantAccessToken });
+    reply.send({ access_token: continueUri.access_token.value });
+})
+
 fastify.post('/split-payment', async (request, reply) => {
     const { grantContinueUri, grantAccessToken, senderWallet, receiverWallet, max_amount, splits } = request.body;
     const splitCount = parseInt(splits) || 2; // Default to 2 if not specified
