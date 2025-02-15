@@ -7,6 +7,9 @@ export class GlobalStore {
     private _allSitesTimes: string;
     private _allBlockedSites: string;
     private _accountDetails: string;
+    private _userGoal: string;
+    private _tmrGoal: string;
+    private _blockedTopics: string = "blockedTopics";
 
     private _store: Store;
     private _secureStore: SecureStore;
@@ -15,6 +18,8 @@ export class GlobalStore {
         this._allSitesTimes = allSitesTimesKey;
         this._allBlockedSites = allBlockedSitesKey;
         this._accountDetails = accountDetailsKey;
+        this._userGoal = "userGoal";
+        this._tmrGoal = "tmrGoal";
 
         this._store = new Store();
         this._secureStore = new SecureStore();
@@ -187,6 +192,32 @@ export class GlobalStore {
         }
 
         await this._store.setInStorage(this._allBlockedSites, currentSites);
+    }
+
+    // Goal related methods
+    public async getUserGoal(): Promise<string | null> {
+        return await this._store.getFromStorage(this._userGoal) || null;
+    }
+
+    public async setUserGoal(goal: string): Promise<void> {
+        await this._store.setInStorage(this._userGoal, goal);
+    }
+
+    public async getTmrGoal(): Promise<string | null> {
+        return await this._store.getFromStorage(this._tmrGoal) || null;
+    }
+
+    public async setTmrGoal(goal: string): Promise<void> {
+        await this._store.setInStorage(this._tmrGoal, goal);
+    }
+
+    public async removeTmrGoal(): Promise<void> {
+        await this._store.removeFromStorage(this._tmrGoal);
+    }
+
+    public async getBlockedTopics(): Promise<string[]> {
+        const topics = await this._store.getFromStorage(this._blockedTopics);
+        return Array.isArray(topics) ? topics : [];
     }
 
     // TODO: Add validation and getters and setters for each of the other methods
