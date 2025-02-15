@@ -21,7 +21,7 @@ function detectThemesFromFile(htmlFilePath) {
             "Vivy", "Gintama", "Black Clover", "Fairy Tail",
             "manhwa", "webtoon", "korean comics", "manga scan", "manga raw", 
             "tower of god", "solo leveling", "the beginning after the end",
-            "omniscient reader’s viewpoint", "eleceed", "unholy blood", "lookism",
+            "omniscient reader's viewpoint", "eleceed", "unholy blood", "lookism",
             "true beauty", "the gamer", "god of high school", "noblesse", "bastard",
             "sweet home", "reborn rich", "survival story of a sword king in a fantasy world",
             "tomb raider king", "return of the mad demon", "legend of the northern blade",
