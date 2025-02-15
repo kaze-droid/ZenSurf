@@ -1,20 +1,15 @@
 function getGifFilename(state) {
     const gifMapping = {
-        "happy": "happy.gif",
-        "sad": "sad.gif",
-        "excited": "excited.gif",
-        "angry": "angry.gif",
+        "good": "good.gif",
+        "bad": "bad.gif",
+        "penalise": "penalise.gif",
+        "reward": "reward.gif",
         "confused": "confused.gif",
-        "surprised": "surprised.gif",
-        "tired": "tired.gif",
-        "bored": "bored.gif",
-        "neutral": "neutral.gif"
+        "neutral": "neutral.gif",
+        "idle": "idle.gif",
     };
 
-    return gifMapping[state] || "default.gif";
+    return gifMapping[state] || "neutral.gif";
 }
 
-// Example usage
-console.log(getGifFilename("happy")); // Output: "happy.gif"
-console.log(getGifFilename("angry")); // Output: "angry.gif"
-console.log(getGifFilename("unknown")); // Output: "default.gif"
+console.log(getGifFilename("good")); // good.gif
