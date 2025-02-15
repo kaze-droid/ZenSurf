@@ -1,0 +1,162 @@
+import React, { useRef } from 'react'
+import { Input } from '~components/ui/input'
+import { RightArrow } from '~components/icons';
+import { validateAndExtractDomain } from '~utils/extract-domain';
+import { useToast } from '~hooks/use-toast';
+import { Toaster } from '~components/ui/toaster';
+import { Badge } from '~components/ui/badge';
+import { X } from 'lucide-react';
+import { useStorage } from '@plasmohq/storage/hook';
+
+
+interface BannedSiteProps {
+    siteName: string;
+    onRemove: () => void;
+}
+const BannedSite = ({ siteName, onRemove }: BannedSiteProps) => (
+    <Badge className='h-9 w-full' variant='outline'>
+        <span className='w-full uppercase text-sm flex items-center justify-between'>
+            {siteName}
+            <X className='cursor-pointer hover:text-muted' onClick={onRemove} />
+        </span>
+    </Badge>
+);
+
+export default function Settings() {
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const { toast } = useToast();
+
+    const [blockedSites, setBlockedSites] = useStorage<string[]>('blockedSites', (v) => v === undefined ? [] : v);
+
+    const addSite = () => {
+        if (!inputRef.current) return;
+
+        const input = inputRef.current.value;
+        const result = validateAndExtractDomain(input);
+
+        if (!result.isValid) {
+            toast({
+                variant: "destructive",
+                title: 'Uh oh! Something went wrong',
+                description: `Invalid Input: ${result.error}`
+            });
+            return;
+        }
+
+        // Clear input
+        setBlockedSites((prevSites) => {
+            const newSites = new Set(prevSites);
+            const prevSize = newSites.size;
+            newSites.add(result.domain);
+            const newSize = newSites.size;
+
+            // Check if its duplicate
+            if (prevSize === newSize) {
+                toast({
+                    variant: "destructive",
+                    title: 'Uh oh! Something went wrong',
+                    description: `Invalid Input: Duplicate Blacklisted Site`
+                });
+            }
+            const newSitesArr = Array.from(newSites);
+            return newSitesArr;
+        });
+        inputRef.current.value = '';
+        return;
+    }
+
+    const removeSite = (siteToRemove: string) => {
+        setBlockedSites((prevSites) => prevSites.filter((site) => site !== siteToRemove));
+    }
+
+    return (
+        <div className='space-y-3 flex flex-col w-full h-full'>
+            <div className='flex space-x-3 w-full h-[50%]'>
+
+                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[70%] h-full'>
+                    hello there!
+                </div>
+
+                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[30%] h-full'>
+                    <span className='text-xl pb-3 font-mono'>Your <span className='text-primary'>privacy </span>is <span className='text-primary'>important</span> to us</span>
+
+                    <blockquote className="text-xl border-muted border-l-2 pl-6 mb-2 italic">
+                        We understand that addiction recovery can be sensitive
+                    </blockquote>
+
+
+                    <strong className='tracking-tight text-lg my-2'>
+                        Your data stays yours — always. Your browsing history, blacklisted sites, and identity your <a className='underline text-secondary' href='https://support.google.com/chrome/a/answer/9902456?hl=en' target='_blank'>never leaves your device;</a>
+                    </strong>
+
+
+                    <strong className='tracking-tight text-lg my-2'>
+                        To process anonymous challenge rewards, we make sure to only use <a className='underline text-secondary' href='https://cloudian.com/guides/data-protection/data-encryption-the-ultimate-guide/' target='_blank'>encrypted data</a> so nothing gets sent to our servers
+                    </strong>
+
+                </div>
+            </div>
+
+            <div className='flex space-x-3 w-full h-[50%]'>
+
+                {/* Blacklist sites container */}
+                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[60%] h-full'>
+                    <span className='text-xl pb-3 font-mono'>Sites to <span className='text-primary'>blacklist</span></span>
+
+                    <div className='flex space-x-4'>
+                        <Input
+                            className='h-10 w-56 font-serif'
+                            type='text' placeholder='e.g. youtube.com'
+                            ref={inputRef}
+                            onKeyDown={event => { if (event.key === 'Enter') addSite() }} />
+
+
+                        <div className="flex cursor-pointer h-9 p-2 items-center transition-all rounded-[4px]
+                        focus-visible:outline focus-visible:outline-neutral-800
+                        bg-primary-light hover:bg-primary active:scale-[98%] w-28" onClick={() => addSite()}>
+
+                            <span className="uppercase text-sm flex items-center">
+                                <RightArrow className="h-5 w-5" />
+                            </span>
+
+                            <span className="uppercase text-sm flex items-center">
+                                enter
+                            </span>
+                        </div>
+                    </div>
+                    <div className="pt-4 flex flex-col space-y-4 overflow-y-auto" style={{ scrollbarWidth: "none" }}>
+                        {Array.from({ length: Math.ceil(blockedSites.length / 3) }, (_, rowIndex) => (
+                            <div key={rowIndex} className="flex space-x-3">
+                                {blockedSites.slice(rowIndex * 3, (rowIndex + 1) * 3).map((site, idx) => (
+                                    <div key={idx} className="w-1/3">
+                                        <BannedSite
+                                            siteName={site}
+                                            onRemove={() => removeSite(site)}
+                                        />
+                                    </div>
+                                ))}
+                                {/* Add invisible placeholder items to maintain layout */}
+                                {[...Array(3 - (blockedSites.slice(rowIndex * 3, (rowIndex + 1) * 3).length))].map((_, idx) => (
+                                    <div key={`placeholder-${idx}`} className="w-1/3" />
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+
+                </div>
+
+
+
+                {/* Blacklist sites explanation */}
+                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[40%] h-full'>
+                    <span className='text-xl pb-3 font-mono'>How does <span className='text-primary'>blacklisting</span> sites <span className='text-primary'>work</span>?</span>
+                </div>
+            </div>
+
+
+            <Toaster />
+        </div>
+    )
+}
+
+
