@@ -29,6 +29,7 @@ export default function Settings() {
     const { toast } = useToast();
     const [blockedSites, setBlockedSites] = useStorage<string[]>('blockedSites', (v) => v === undefined ? [] : v);
     const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
+    const [walletId, setWalletId] = useStorage<string>('walletId', (v) => v === undefined ? '' : v);
 
     const possibleBlockedSitesList = [
         { value: "anime", label: "Anime" },
@@ -80,8 +81,6 @@ export default function Settings() {
     }
 
     const addUser = async () => {
-        axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/new-user`)
-
         const userInput = userInputRef.current?.value;
 
         if (!userInput || !userInput.includes('https://ilp.interledger-test.dev/')) {
@@ -103,6 +102,7 @@ export default function Settings() {
                 userInputRef.current.value = '';
             }
 
+            setWalletId(userInput);
             toast({
                 title: 'Success',
                 description: `Successfully added user!`
