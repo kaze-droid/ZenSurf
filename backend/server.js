@@ -134,6 +134,140 @@ fastify.post('/finalize-payment', async (request, reply) => {
   }
 });
 
+fastify.post('/double-payment', async (request, reply) => {
+  const { grantContinueUri, grantAccessToken, senderWallet, receiverWallet, max_amount } = request.body;
+  console.log("Starting double payment process with parameters:", { senderWallet, receiverWallet, max_amount });
+
+  try {
+    const client = await createAuthenticatedClient({
+      walletAddressUrl: CLIENT_WALLET,
+      privateKey: WALLET_PRIVATE_KEY,
+      keyId: WALLET_KEY_ID,
+    });
+    console.log("Successfully created authenticated client");
+
+    const sendingWalletAddress = await client.walletAddress.get({ url: senderWallet });
+    const receivingWalletAddress = await client.walletAddress.get({ url: receiverWallet });
+    console.log("Retrieved wallet addresses:", {
+      sender: sendingWalletAddress.id,
+      receiver: receivingWalletAddress.id
+    });
+
+    // First incoming payment grant
+    console.log("Requesting first incoming payment grant...");
+    const incomingPaymentGrant1 = await client.grant.request({ url: receivingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "incoming-payment", actions: ["read", "complete", "create"] }]
+      }
+    });
+    console.log("Received first incoming payment grant");
+
+    // Second incoming payment grant
+    console.log("Requesting second incoming payment grant...");
+    const incomingPaymentGrant2 = await client.grant.request({ url: receivingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "incoming-payment", actions: ["read", "complete", "create"] }]
+      }
+    });
+    console.log("Received second incoming payment grant");
+
+    // Create first incoming payment
+    console.log("Creating first incoming payment...");
+    const incomingPayment1 = await client.incomingPayment.create({
+      url: receivingWalletAddress.resourceServer,
+      accessToken: incomingPaymentGrant1.access_token.value,
+    }, {
+      walletAddress: receivingWalletAddress.id,
+      incomingAmount: { assetCode: receivingWalletAddress.assetCode, assetScale: receivingWalletAddress.assetScale, value: String(max_amount / 2) }
+    });
+    console.log("Created first incoming payment:", { id: incomingPayment1.id, amount: max_amount / 2 });
+
+    // Create second incoming payment
+    console.log("Creating second incoming payment...");
+    const incomingPayment2 = await client.incomingPayment.create({
+      url: receivingWalletAddress.resourceServer,
+      accessToken: incomingPaymentGrant2.access_token.value,
+    }, {
+      walletAddress: receivingWalletAddress.id,
+      incomingAmount: { assetCode: receivingWalletAddress.assetCode, assetScale: receivingWalletAddress.assetScale, value: String(max_amount / 2) }
+    });
+    console.log("Created second incoming payment:", { id: incomingPayment2.id, amount: max_amount / 2 });
+
+    // Quote grants
+    console.log("Requesting quote grants...");
+    const quoteGrant1 = await client.grant.request({ url: sendingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "quote", actions: ["create", "read"] }]
+      }
+    });
+    const quoteGrant2 = await client.grant.request({ url: sendingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "quote", actions: ["create", "read"] }]
+      }
+    });
+    console.log("Received both quote grants");
+
+    // Create quotes
+    console.log("Creating first quote...");
+    const quote1 = await client.quote.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: quoteGrant1.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      receiver: incomingPayment1.id,
+      method: "ilp",
+    });
+    console.log("Created first quote:", { id: quote1.id });
+
+    console.log("Creating second quote...");
+    const quote2 = await client.quote.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: quoteGrant2.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      receiver: incomingPayment2.id,
+      method: "ilp",
+    });
+    console.log("Created second quote:", { id: quote2.id });
+
+    // Continue grants
+    console.log("Continuing grants...");
+    const outgoingPaymentGrant1 = await client.grant.continue({ url: grantContinueUri, accessToken: grantAccessToken });
+    console.log("Received first outgoing payment grant");
+    // const outgoingPaymentGrant2 = await client.grant.continue({ url: grantContinueUri, accessToken: grantAccessToken });
+    // console.log("Received second outgoing payment grant");
+
+    // Create outgoing payments
+    console.log("Creating first outgoing payment...");
+    const outgoingPayment1 = await client.outgoingPayment.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: outgoingPaymentGrant1.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      quoteId: quote1.id,
+    });
+    console.log("Created first outgoing payment:", { id: outgoingPayment1.id });
+
+    console.log("Creating second outgoing payment...");
+    const outgoingPayment2 = await client.outgoingPayment.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: outgoingPaymentGrant1.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      quoteId: quote2.id,
+    });
+    console.log("Created second outgoing payment:", { id: outgoingPayment2.id });
+
+    console.log("Double payment process completed successfully");
+    reply.send({ message: "Payment successful", paymentDetails: outgoingPayment1, paymentDetails2: outgoingPayment2 });
+
+  } catch (error) {
+    console.error("Error in double-payment process:", error);
+    console.error("Error occurred at:", error.stack);
+    reply.status(500).send({ error: "Payment finalization failed", details: error.message });
+  }
+});
+
 fastify.listen({ port: 3000 }, (err, address) => {
   if (err) {
     fastify.log.error(err);
