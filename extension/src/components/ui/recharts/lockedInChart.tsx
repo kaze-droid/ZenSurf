@@ -32,7 +32,7 @@ export default function LockedInChart({ colors, data, width, height, className }
 
             {/* Centered Text */}
             <text x={Math.floor(width / 2) + 4} y={Math.floor(height / 2) + 7} textAnchor="middle" dominantBaseline="middle" fill='#fff' fontSize={30}>
-                {Math.floor((data[0].value / data[1].value) * 100)}%
+                {Math.min(Math.floor((data[0].value / data[1].value) * 100), 100)}%
             </text>
 
 
