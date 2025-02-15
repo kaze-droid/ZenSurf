@@ -1,11 +1,16 @@
 import Fastify from 'fastify';
 import { createAuthenticatedClient, isFinalizedGrant } from '@interledger/open-payments';
+import { createClient } from '@supabase/supabase-js'
 
 const fastify = Fastify({ logger: true });
 
 const CLIENT_WALLET = "https://ilp.interledger-test.dev/1b62a0b8"
 const WALLET_PRIVATE_KEY = "private.key";
 const WALLET_KEY_ID = "cec09679-1abd-4075-8bfb-198e98ca78bd";
+
+const SUPABASE_URL = "https://zanrmopcruojbmouflkp.supabase.co"
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InphbnJtb3BjcnVvamJtb3VmbGtwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk1OTY2MzEsImV4cCI6MjA1NTE3MjYzMX0.6adZdSyZ18K1h6IHA_eytwEs3a4FQO4gNkMgWM1lWQg"
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
 
 async function sendMoney(client, senderWalletAddress, receiverWalletAddress, amount, outgoingPaymentToken) {
   console.log(`Starting sendMoney with amount: ${amount}`);
@@ -75,6 +80,52 @@ async function sendMoney(client, senderWalletAddress, receiverWalletAddress, amo
   }
 }
 
+// Used to display leaderboard based on their streak count
+fastify.get("/leaderboard", async (request, reply) => {
+  const {data, error} = await supabase
+      .from("streak")
+      .select()
+      .order("streak_count", {ascending: false });
+  
+  if (error == null) {reply.send(data)} else {reply.status(500).send({error: "Error in displaying leaderboard", details: error.message});}
+});
+
+// Used to create a new user in users table
+fastify.post("/new-user", async (request, reply) => {
+  const {wallet_id} = request.body;
+  const {error} = await supabase
+      .from('users')
+      .insert({wallet_id: wallet_id})
+  if (error == null) {console.log("User creation successful")} else {reply.status(500).send({error: "Error in creating new user", details: error.message});}
+})
+
+// Used to create a new record in log table
+fastify.post("/new-record", async (request, reply) => {
+  const {id, banned_cat, duration, commit_price} = request.body;
+  const {error} = await supabase
+          .from('logs')
+          .insert({user_id: id, banned_category: banned_cat, duration: duration, commit_price: commit_price})
+  if (error == null) {console.log("Record creation successful")} else {reply.status(500).send({error: "Error in creating new record", details: error.message});}
+});
+
+// Used to create a new streak in users table
+fastify.post("/new-user-streak", async (request, reply) => {
+  const {id, streak_count} = request.body;
+  const {error} = await supabase
+          .from('streak')
+          .insert({user_id: id, streak_count: streak_count})
+  if (error == null) {console.log("Record creation successful")} else {reply.status(500).send({error: "Error in creating new user streak", details: error.message});}
+})
+
+// Used to update meet_commit value
+fastify.put("/update-commit-value", async (request, reply) => {
+  const {id} = request.body
+  const {error} = await supabase
+      .from('logs')
+      .update({ fulfill_commit: false })
+      .eq('user_id', id)
+  if (error == null) {console.log("Update successful")} else {reply.status(500).send({error: "Error in updating commit value", details: error.message});}
+})
 
 fastify.post('/initiate-payment', async (request, reply) => {
   const { senderWallet, receiverWallet, amount } = request.body;
