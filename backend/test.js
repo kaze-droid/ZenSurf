@@ -92,7 +92,7 @@ async function testPaymentAPISplits(senderWallet, receiverWallet) {
             grantContinueUri: initiateResponse.data.grantContinueUri,
             grantAccessToken: initiateResponse.data.grantAccessToken,
             senderWallet,
-            receiverWallet,
+            receiverWallet:"https://ilp.interledger-test.dev/c163a9e7",
             max_amount: 1000,
             splits: 5
         });

@@ -20,6 +20,7 @@ import confusedCapy from "data-base64:~assets/confused.gif";
 import neutralCapy from "data-base64:~assets/neutral.gif";
 import idleCapy from "data-base64:~assets/idle.gif";
 import streakCapy from "data-base64:~assets/streak.gif";
+import chatBubble from "data-base64:~assets/chatBubble.png";
 
 import { setBad, setNeutral, setConfused } from "~cat-slice";
 import { setGood } from "~cat-slice";
@@ -41,6 +42,7 @@ const gifURLs = {
 const PlasmoPricingExtra = ({ domain }) => {
     const dispatch = useAppDispatch();
     const [gifURLShow, setgifURLShow] = React.useState(neutralCapy);
+    const [avatarMsg, setAvatarMsg] = React.useState("");
     const isFirstRender = React.useRef(true); // Track first render
     const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
     // Update GIF when the domain changes
@@ -51,22 +53,39 @@ const PlasmoPricingExtra = ({ domain }) => {
         // First check the unproductive and productive sites
         if (unproductiveSites.includes(domain)) {
             dispatch(setBad());
+            setAvatarMsg("Hmmmmmm, what is this website doing here?");
             return;
         } 
         if (productivityAndCodingSites.includes(domain)) {
             dispatch(setGood());
+            setAvatarMsg("Looking good!");
             return;
         } 
 
         // Check for blocked content in all other cases
-        const blocked = ["plasmo"];
         const pageHTML = document.documentElement.innerText;
-        const hasBlockedContent = blocked.some(theme => pageHTML.includes(theme));
-        
-        if (hasBlockedContent) {
+
+        // Count occurrences of each theme's keywords
+        const blockedThemes = Object.keys(themes).filter(theme => {
+            // Count total occurrences of all keywords for this theme
+            const occurrences = themes[theme].reduce((count, keyword) => {
+                const regex = new RegExp(keyword, 'gi');
+                const matches = pageHTML.match(regex);
+                return count + (matches ? matches.length : 0);
+            }, 0);
+            
+            // Theme is considered blocked if keywords appear at least 3 times
+            return occurrences >= 3;
+        });
+
+        console.log('Blocked themes and their occurrences:', blockedThemes);
+        if (blockedThemes.length > 0) {
             dispatch(setConfused());
+            // specify what the blocked themes are
+            setAvatarMsg(`I'm not sure about this website. It seems to be about ${blockedThemes.join(", ")}.`);
         } else {
             dispatch(setNeutral());
+            setAvatarMsg("Looks like a normal website to me.");
         }
     }, [domain]); // Only depend on domain changes
 
@@ -76,35 +95,63 @@ const PlasmoPricingExtra = ({ domain }) => {
         setgifURLShow(gifURLs[value]);
     }, [value]);
 
-    // Temporary money GIF effect, but not on first render
-    // React.useEffect(() => {
-    //     if (isFirstRender.current) {
-    //         isFirstRender.current = false; // Set it to false after first render
-    //         return;
-    //     }
-
-    //     let previousGif = gifURLShow;
-    //     setgifURLShow(money);
-    //     setTimeout(() => {
-    //         setgifURLShow(previousGif);
-    //     }, 1000);
-    // }, [value]);
+    React.useEffect(() => {
+        // only show for a few seconds
+        if (avatarMsg !== "") {
+            setTimeout(() => {
+                setAvatarMsg("");
+            }, 2000);
+        }
+    }, [avatarMsg]);
 
     return (
-        <img
-            id="catGif"
-            src={gifURLShow}
-            alt="Capybara GIF"
-            style={{
+        <>
+            <img
+                id="catGif"
+                src={gifURLShow}
+                alt="Capybara GIF"
+                style={{
                 borderRadius: 8,
                 position: "absolute",
                 top: "10vh",
                 left: "90vw",
-                width: 100,
-                height: 100,
+                width: "10vw",
+                height: "10vw",
                 pointerEvents: "none"
             }}
-        />
+            />
+            {avatarMsg !== "" && (
+                <>
+                <img
+                    id="chatBubble"
+                    src={chatBubble}
+                alt="Chat Bubble"
+                style={{
+                    borderRadius: 8,
+                    position: "absolute",
+                    top: "8vh",
+                    left: "80vw",
+                    width: "10vw",
+                    height: "10vw",
+                    pointerEvents: "none"
+                }}
+            />
+            <div id="avatarMsg" style={{
+                borderRadius: 8,
+                position: "absolute",
+                top: "10vh",
+                left: "81vw",
+                    width: "8vw",
+                    height: "10vw",
+                    pointerEvents: "none",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    fontSize: "1vw",
+                    color: "black",
+                }}>{avatarMsg}</div>
+            </>
+            )}
+        </>
     );
 };
 
