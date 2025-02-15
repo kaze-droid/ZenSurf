@@ -1,6 +1,6 @@
 import React from "react";
 import { useAppSelector, useAppDispatch } from "~store";
-import { productivityAndCodingSites, unproductiveSites } from "~contents/websites";
+import { neutralSites, productivityAndCodingSites, unproductiveSites, themes } from "~contents/websites";
 import { useStorage } from "@plasmohq/storage/hook"
 
 // import angryCapy from "data-base64:~assets/angry_capy.gif";
@@ -21,8 +21,7 @@ import neutralCapy from "data-base64:~assets/neutral.gif";
 import idleCapy from "data-base64:~assets/idle.gif";
 import streakCapy from "data-base64:~assets/streak.gif";
 
-import money from "data-base64:~assets/money.gif";
-import { setBad, setConfused } from "~cat-slice";
+import { setBad, setNeutral, setConfused } from "~cat-slice";
 import { setGood } from "~cat-slice";
 
 // const positiveCapyGifs = [loveCapy, spaCapy, chillCapy, singingCapy];
@@ -46,14 +45,30 @@ const PlasmoPricingExtra = ({ domain }) => {
     const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
     // Update GIF when the domain changes
     React.useEffect(() => {
+        // Only run the check if we have a domain
+        if (!domain) return;
+
+        // First check the unproductive and productive sites
         if (unproductiveSites.includes(domain)) {
             dispatch(setBad());
-        } else if (productivityAndCodingSites.includes(domain)) {
+            return;
+        } 
+        if (productivityAndCodingSites.includes(domain)) {
             dispatch(setGood());
-        } else {
+            return;
+        } 
+
+        // Check for blocked content in all other cases
+        const blocked = ["plasmo"];
+        const pageHTML = document.documentElement.innerText;
+        const hasBlockedContent = blocked.some(theme => pageHTML.includes(theme));
+        
+        if (hasBlockedContent) {
             dispatch(setConfused());
+        } else {
+            dispatch(setNeutral());
         }
-    }, [domain]);
+    }, [domain]); // Only depend on domain changes
 
     const value = useAppSelector((state) => state.counter.mood);
 
@@ -62,18 +77,18 @@ const PlasmoPricingExtra = ({ domain }) => {
     }, [value]);
 
     // Temporary money GIF effect, but not on first render
-    React.useEffect(() => {
-        if (isFirstRender.current) {
-            isFirstRender.current = false; // Set it to false after first render
-            return;
-        }
+    // React.useEffect(() => {
+    //     if (isFirstRender.current) {
+    //         isFirstRender.current = false; // Set it to false after first render
+    //         return;
+    //     }
 
-        let previousGif = gifURLShow;
-        setgifURLShow(money);
-        setTimeout(() => {
-            setgifURLShow(previousGif);
-        }, 1000);
-    }, [value]);
+    //     let previousGif = gifURLShow;
+    //     setgifURLShow(money);
+    //     setTimeout(() => {
+    //         setgifURLShow(previousGif);
+    //     }, 1000);
+    // }, [value]);
 
     return (
         <img
