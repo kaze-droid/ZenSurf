@@ -7,7 +7,8 @@ import { Toaster } from '~components/ui/toaster';
 import { Badge } from '~components/ui/badge';
 import { X } from 'lucide-react';
 import { useStorage } from '@plasmohq/storage/hook';
-import LockedInChart from '~components/ui/recharts/lockedInChart';
+import { MultiSelect } from '~components/ui/multiSelect';
+import axios from 'axios';
 
 interface BannedSiteProps {
     siteName: string;
@@ -24,10 +25,18 @@ const BannedSite = ({ siteName, onRemove }: BannedSiteProps) => (
 
 export default function Settings() {
     const siteInputRef = useRef<HTMLInputElement | null>(null);
-    const topicInputRef = useRef<null>(null);
+    const userInputRef = useRef<HTMLInputElement | null>(null);
     const { toast } = useToast();
     const [blockedSites, setBlockedSites] = useStorage<string[]>('blockedSites', (v) => v === undefined ? [] : v);
     const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
+
+    const possibleBlockedSitesList = [
+        { value: "anime", label: "Anime" },
+        { value: "gaming", label: "Gaming" },
+        { value: "gambling", label: "Gambling" },
+        { value: "entertainment", label: "Entertainment" },
+        { value: "reels", label: "Reels" },
+    ];
 
     const addSite = () => {
         if (!siteInputRef.current) return;
@@ -66,12 +75,48 @@ export default function Settings() {
         return;
     }
 
-    const addTopic = () => {
-
-    }
-
     const removeSite = (siteToRemove: string) => {
         setBlockedSites((prevSites) => prevSites.filter((site) => site !== siteToRemove));
+    }
+
+    const addUser = async () => {
+        axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/new-user`)
+
+        const userInput = userInputRef.current?.value;
+
+        if (!userInput || !userInput.includes('https://ilp.interledger-test.dev/')) {
+            toast({
+                variant: "destructive",
+                title: 'Uh oh! Something went wrong',
+                description: `Invalid User Input: must be of format https://ilp.interledger-test.dev/`
+            });
+            return;
+        }
+
+        try {
+            const response = await axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/new-user`, { wallet_id: userInput },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+
+            // Clear input on success
+            if (userInputRef.current) {
+                userInputRef.current.value = '';
+            }
+
+            toast({
+                title: 'Success',
+                description: `Successfully added user!`
+            });
+
+
+        } catch (error) {
+            console.error('Error adding user:', error);
+            toast({
+                variant: "destructive",
+                title: 'Uh oh! Something went wrong',
+                description: `Invalid User Input: ${error}`
+            });
+        }
     }
 
     return (
@@ -80,6 +125,12 @@ export default function Settings() {
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[70%] h-full'>
                     <span className='text-xl pb-3 font-mono'><span className='text-primary'>Digital Wallet</span> information</span>
+
+                    <Input
+                        className='h-10 w-56 font-serif'
+                        type='text' placeholder='e.g. youtube.com'
+                        ref={userInputRef}
+                        onKeyDown={event => { if (event.key === 'Enter') addUser() }} />
 
                 </div>
 
@@ -153,6 +204,7 @@ export default function Settings() {
                 {/* Blacklist sites explanation */}
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[40%] h-full'>
                     <span className='text-xl pb-3 font-mono'><span className='text-primary'>Blacklisting</span> by common <span className='text-primary'>topics</span></span>
+                    <MultiSelect options={possibleBlockedSitesList} placeholder='' onValueChange={setBlockedTopics} defaultValue={blockedTopics} />
                 </div>
             </div>
 

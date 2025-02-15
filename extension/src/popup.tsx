@@ -30,7 +30,7 @@ function IndexPopup() {
     const dailyTimeSpent = useMemo((): number => {
         if (!allSitesTimes || !allSitesTimes[curDate]) return 0;
         return Object.values(allSitesTimes[curDate])
-            .reduce<number>((acc: number, site: SiteTime) => { return acc + (isLockedInSite(site.url) ? 0 : site.totalMinutes) }, 0)
+            .reduce<number>((acc: number, site: SiteTime) => { return acc + (isLockedInSite(site.url) ? site.totalMinutes : 0) }, 0)
     }, [allSitesTimes, curDate]);
 
     const renderDailyTotal = useMemo(() => {
