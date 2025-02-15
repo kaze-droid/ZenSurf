@@ -7,6 +7,75 @@ const CLIENT_WALLET = "https://ilp.interledger-test.dev/1b62a0b8"
 const WALLET_PRIVATE_KEY = "private.key";
 const WALLET_KEY_ID = "cec09679-1abd-4075-8bfb-198e98ca78bd";
 
+async function sendMoney(client, senderWalletAddress, receiverWalletAddress, amount, outgoingPaymentToken) {
+  console.log(`Starting sendMoney with amount: ${amount}`);
+
+  const incomingPaymentGrant = await client.grant.request({ url: receiverWalletAddress.authServer }, {
+    access_token: {
+      access: [{ type: "incoming-payment", actions: ["read", "complete", "create"] }]
+    }
+  });
+  console.log("Received incoming payment grant");
+
+  const incomingPayment = await client.incomingPayment.create({
+    url: receiverWalletAddress.resourceServer,
+    accessToken: incomingPaymentGrant.access_token.value,
+  }, {
+    walletAddress: receiverWalletAddress.id,
+    incomingAmount: { 
+      assetCode: receiverWalletAddress.assetCode, 
+      assetScale: receiverWalletAddress.assetScale, 
+      value: String(amount) 
+    }
+  });
+  console.log("Created incoming payment:", { id: incomingPayment.id });
+
+  const quoteGrant = await client.grant.request({ url: senderWalletAddress.authServer }, {
+    access_token: {
+      access: [{ type: "quote", actions: ["create", "read"] }]
+    }
+  });
+  console.log("Received quote grant");
+
+  const quote = await client.quote.create({
+    url: senderWalletAddress.resourceServer,
+    accessToken: quoteGrant.access_token.value,
+  }, {
+    walletAddress: senderWalletAddress.id,
+    receiver: incomingPayment.id,
+    method: "ilp",
+  });
+  console.log("Created quote:", { id: quote.id });
+
+  if (!outgoingPaymentToken) {
+    throw new Error("Missing outgoing payment token");
+  }
+
+  try {
+    console.log({
+      url: senderWalletAddress.resourceServer,
+      accessToken: outgoingPaymentToken,
+    }, {
+      walletAddress: senderWalletAddress.id,
+      quoteId: quote.id,
+    })
+
+    const outgoingPayment = await client.outgoingPayment.create({
+      url: senderWalletAddress.resourceServer,
+      accessToken: outgoingPaymentToken,
+    }, {
+      walletAddress: senderWalletAddress.id,
+      quoteId: quote.id,
+    });
+    console.log("Created outgoing payment:", { id: outgoingPayment.id });
+    return outgoingPayment;
+  } catch (error) {
+    console.error("Error creating outgoing payment:", error);
+    throw error;
+  }
+}
+
+
 fastify.post('/initiate-payment', async (request, reply) => {
   const { senderWallet, receiverWallet, amount } = request.body;
 
@@ -130,6 +199,211 @@ fastify.post('/finalize-payment', async (request, reply) => {
     reply.send({ message: "Payment successful", paymentDetails: outgoingPayment });
   } catch (error) {
     console.error("Error:", error);
+    reply.status(500).send({ error: "Payment finalization failed", details: error.message });
+  }
+});
+
+fastify.post('/double-payment', async (request, reply) => {
+  const { grantContinueUri, grantAccessToken, senderWallet, receiverWallet, max_amount } = request.body;
+  console.log("Starting double payment process with parameters:", { senderWallet, receiverWallet, max_amount });
+
+  try {
+    const client = await createAuthenticatedClient({
+      walletAddressUrl: CLIENT_WALLET,
+      privateKey: WALLET_PRIVATE_KEY,
+      keyId: WALLET_KEY_ID,
+    });
+    console.log("Successfully created authenticated client");
+
+    const sendingWalletAddress = await client.walletAddress.get({ url: senderWallet });
+    const receivingWalletAddress = await client.walletAddress.get({ url: receiverWallet });
+    console.log("Retrieved wallet addresses:", {
+      sender: sendingWalletAddress.id,
+      receiver: receivingWalletAddress.id
+    });
+
+    // First incoming payment grant
+    console.log("Requesting first incoming payment grant...");
+    const incomingPaymentGrant1 = await client.grant.request({ url: receivingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "incoming-payment", actions: ["read", "complete", "create"] }]
+      }
+    });
+    console.log("Received first incoming payment grant");
+
+    // Second incoming payment grant
+    console.log("Requesting second incoming payment grant...");
+    const incomingPaymentGrant2 = await client.grant.request({ url: receivingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "incoming-payment", actions: ["read", "complete", "create"] }]
+      }
+    });
+    console.log("Received second incoming payment grant");
+
+    // Create first incoming payment
+    console.log("Creating first incoming payment...");
+    const incomingPayment1 = await client.incomingPayment.create({
+      url: receivingWalletAddress.resourceServer,
+      accessToken: incomingPaymentGrant1.access_token.value,
+    }, {
+      walletAddress: receivingWalletAddress.id,
+      incomingAmount: { assetCode: receivingWalletAddress.assetCode, assetScale: receivingWalletAddress.assetScale, value: String(max_amount / 2) }
+    });
+    console.log("Created first incoming payment:", { id: incomingPayment1.id, amount: max_amount / 2 });
+
+    // Create second incoming payment
+    console.log("Creating second incoming payment...");
+    const incomingPayment2 = await client.incomingPayment.create({
+      url: receivingWalletAddress.resourceServer,
+      accessToken: incomingPaymentGrant2.access_token.value,
+    }, {
+      walletAddress: receivingWalletAddress.id,
+      incomingAmount: { assetCode: receivingWalletAddress.assetCode, assetScale: receivingWalletAddress.assetScale, value: String(max_amount / 2) }
+    });
+    console.log("Created second incoming payment:", { id: incomingPayment2.id, amount: max_amount / 2 });
+
+    // Quote grants
+    console.log("Requesting quote grants...");
+    const quoteGrant1 = await client.grant.request({ url: sendingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "quote", actions: ["create", "read"] }]
+      }
+    });
+    const quoteGrant2 = await client.grant.request({ url: sendingWalletAddress.authServer }, {
+      access_token: {
+        access: [{ type: "quote", actions: ["create", "read"] }]
+      }
+    });
+    console.log("Received both quote grants");
+
+    // Create quotes
+    console.log("Creating first quote...");
+    const quote1 = await client.quote.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: quoteGrant1.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      receiver: incomingPayment1.id,
+      method: "ilp",
+    });
+    console.log("Created first quote:", { id: quote1.id });
+
+    console.log("Creating second quote...");
+    const quote2 = await client.quote.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: quoteGrant2.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      receiver: incomingPayment2.id,
+      method: "ilp",
+    });
+    console.log("Created second quote:", { id: quote2.id });
+
+    // Continue grants
+    console.log("Continuing grants...");
+    const outgoingPaymentGrant1 = await client.grant.continue({ url: grantContinueUri, accessToken: grantAccessToken });
+    console.log("Received first outgoing payment grant");
+    // const outgoingPaymentGrant2 = await client.grant.continue({ url: grantContinueUri, accessToken: grantAccessToken });
+    // console.log("Received second outgoing payment grant");
+
+    // Create outgoing payments
+    console.log("Creating first outgoing payment...");
+    const outgoingPayment1 = await client.outgoingPayment.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: outgoingPaymentGrant1.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      quoteId: quote1.id,
+    });
+    console.log("Created first outgoing payment:", { id: outgoingPayment1.id });
+
+    console.log("Creating second outgoing payment...");
+    const outgoingPayment2 = await client.outgoingPayment.create({
+      url: sendingWalletAddress.resourceServer,
+      accessToken: outgoingPaymentGrant1.access_token.value,
+    }, {
+      walletAddress: sendingWalletAddress.id,
+      quoteId: quote2.id,
+    });
+    console.log("Created second outgoing payment:", { id: outgoingPayment2.id });
+
+    console.log("Double payment process completed successfully");
+    reply.send({ message: "Payment successful", paymentDetails: outgoingPayment1, paymentDetails2: outgoingPayment2 });
+
+  } catch (error) {
+    console.error("Error in double-payment process:", error);
+    console.error("Error occurred at:", error.stack);
+    reply.status(500).send({ error: "Payment finalization failed", details: error.message });
+  }
+});
+
+fastify.post('/split-payment', async (request, reply) => {
+  const { grantContinueUri, grantAccessToken, senderWallet, receiverWallet, max_amount, splits } = request.body;
+  const splitCount = parseInt(splits) || 2; // Default to 2 if not specified
+  const amountPerSplit = Math.floor(max_amount / splitCount) - 10; // Use Math.floor to avoid floating point issues
+
+  console.log(`Starting ${splitCount}-way split payment process with parameters:`, 
+    { senderWallet, receiverWallet, max_amount, amountPerSplit });
+
+  try {
+    const client = await createAuthenticatedClient({
+      walletAddressUrl: CLIENT_WALLET,
+      privateKey: WALLET_PRIVATE_KEY,
+      keyId: WALLET_KEY_ID,
+    });
+    console.log("Successfully created authenticated client");
+
+    // Continue grant only once at the beginning
+    console.log("Continuing grant...");
+    const outgoingPaymentGrant = await client.grant.continue({ 
+      url: grantContinueUri, 
+      accessToken: grantAccessToken 
+    });
+    
+    if (!outgoingPaymentGrant?.access_token?.value) {
+      throw new Error("Failed to get valid outgoing payment grant");
+    }
+    console.log("Received outgoing payment grant");
+
+    const sendingWalletAddress = await client.walletAddress.get({ url: senderWallet });
+    const receivingWalletAddress = await client.walletAddress.get({ url: receiverWallet });
+    console.log("Retrieved wallet addresses:", {
+      sender: sendingWalletAddress.id,
+      receiver: receivingWalletAddress.id
+    });
+
+    const outgoingPayments = [];
+    // Create all payments in sequence
+    for (let i = 0; i < splitCount; i++) {
+      console.log(`Processing payment ${i + 1} of ${splitCount}`);
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const outgoingPayment = await sendMoney(
+        client,
+        sendingWalletAddress,
+        receivingWalletAddress,
+        amountPerSplit,
+        outgoingPaymentGrant.access_token.value
+      );
+      outgoingPayments.push({
+        paymentNumber: i + 1,
+        amount: amountPerSplit,
+        paymentId: outgoingPayment.id
+      });
+    }
+
+    console.log(`${splitCount}-way split payment process completed successfully`);
+    reply.send({ 
+      message: "Payments successful",
+      totalAmount: max_amount,
+      numberOfSplits: splitCount,
+      amountPerSplit,
+      payments: outgoingPayments
+    });
+
+  } catch (error) {
+    console.error("Error in split-payment process:", error);
+    console.error("Error occurred at:", error.stack);
     reply.status(500).send({ error: "Payment finalization failed", details: error.message });
   }
 });
