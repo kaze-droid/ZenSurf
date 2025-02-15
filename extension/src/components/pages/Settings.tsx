@@ -7,7 +7,7 @@ import { Toaster } from '~components/ui/toaster';
 import { Badge } from '~components/ui/badge';
 import { X } from 'lucide-react';
 import { useStorage } from '@plasmohq/storage/hook';
-
+import LockedInChart from '~components/ui/recharts/lockedInChart';
 
 interface BannedSiteProps {
     siteName: string;
@@ -23,15 +23,16 @@ const BannedSite = ({ siteName, onRemove }: BannedSiteProps) => (
 );
 
 export default function Settings() {
-    const inputRef = useRef<HTMLInputElement | null>(null);
+    const siteInputRef = useRef<HTMLInputElement | null>(null);
+    const topicInputRef = useRef<null>(null);
     const { toast } = useToast();
-
     const [blockedSites, setBlockedSites] = useStorage<string[]>('blockedSites', (v) => v === undefined ? [] : v);
+    const [blockedTopics, setBlockedTopics] = useStorage<string[]>('blockedTopics', (v) => v === undefined ? [] : v);
 
     const addSite = () => {
-        if (!inputRef.current) return;
+        if (!siteInputRef.current) return;
 
-        const input = inputRef.current.value;
+        const input = siteInputRef.current.value;
         const result = validateAndExtractDomain(input);
 
         if (!result.isValid) {
@@ -61,8 +62,12 @@ export default function Settings() {
             const newSitesArr = Array.from(newSites);
             return newSitesArr;
         });
-        inputRef.current.value = '';
+        siteInputRef.current.value = '';
         return;
+    }
+
+    const addTopic = () => {
+
     }
 
     const removeSite = (siteToRemove: string) => {
@@ -74,23 +79,24 @@ export default function Settings() {
             <div className='flex space-x-3 w-full h-[50%]'>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[70%] h-full'>
-                    hello there!
+                    <span className='text-xl pb-3 font-mono'><span className='text-primary'>Digital Wallet</span> information</span>
+
                 </div>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[30%] h-full'>
-                    <span className='text-xl pb-3 font-mono'>Your <span className='text-primary'>privacy </span>is <span className='text-primary'>important</span> to us</span>
+                    <span className='text-xl pb-2 font-mono'>Your <span className='text-primary'>privacy </span>is <span className='text-primary'>important</span></span>
 
-                    <blockquote className="text-xl border-muted border-l-2 pl-6 mb-2 italic">
+                    <blockquote className="text-lg border-muted border-l-2 pl-6 mb-2 italic">
                         We understand that addiction recovery can be sensitive
                     </blockquote>
 
 
-                    <strong className='tracking-tight text-lg my-2'>
+                    <strong className='tracking-tight text-base my-2'>
                         Your data stays yours — always. Your browsing history, blacklisted sites, and identity your <a className='underline text-secondary' href='https://support.google.com/chrome/a/answer/9902456?hl=en' target='_blank'>never leaves your device;</a>
                     </strong>
 
 
-                    <strong className='tracking-tight text-lg my-2'>
+                    <strong className='tracking-tight text-base my-2'>
                         To process anonymous challenge rewards, we make sure to only use <a className='underline text-secondary' href='https://cloudian.com/guides/data-protection/data-encryption-the-ultimate-guide/' target='_blank'>encrypted data</a> so nothing gets sent to our servers
                     </strong>
 
@@ -107,7 +113,7 @@ export default function Settings() {
                         <Input
                             className='h-10 w-56 font-serif'
                             type='text' placeholder='e.g. youtube.com'
-                            ref={inputRef}
+                            ref={siteInputRef}
                             onKeyDown={event => { if (event.key === 'Enter') addSite() }} />
 
 
@@ -142,17 +148,13 @@ export default function Settings() {
                             </div>
                         ))}
                     </div>
-
                 </div>
-
-
 
                 {/* Blacklist sites explanation */}
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[40%] h-full'>
-                    <span className='text-xl pb-3 font-mono'>How does <span className='text-primary'>blacklisting</span> sites <span className='text-primary'>work</span>?</span>
+                    <span className='text-xl pb-3 font-mono'><span className='text-primary'>Blacklisting</span> by common <span className='text-primary'>topics</span></span>
                 </div>
             </div>
-
 
             <Toaster />
         </div>

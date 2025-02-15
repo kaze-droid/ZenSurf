@@ -2,6 +2,8 @@ import { getBrowserAPI } from '~utils/browser-api';
 import { validateAndExtractDomain } from '~utils/extract-domain';
 import type { DailySiteTimes, SiteTimeTracker, BTConfig, BrowserAPI } from './types';
 
+export const IDLE_DOMAIN = "$idle";
+
 export class BrowserTracker {
     private _sites: SiteTimeTracker;
     private _config: BTConfig;
@@ -37,7 +39,7 @@ export class BrowserTracker {
         // Window focus events
         this._api.windows.onFocusChanged.addListener((windowId) => {
             if (windowId === this._api.windows.WINDOW_ID_NONE) {
-                this._sites.setCurrentFocus(null);
+                this._sites.setCurrentFocus(IDLE_DOMAIN);
                 return;
             }
             this._updateTimeWithCurrentTab();
@@ -50,8 +52,7 @@ export class BrowserTracker {
                 this._updateTimeWithCurrentTab();
             } else {
                 this._config.isUserIdle = true;
-                this._updateTimeWithCurrentTab();
-                this._sites.setCurrentFocus(null);
+                this._sites.setCurrentFocus(IDLE_DOMAIN);
             }
         });
     }
@@ -63,22 +64,20 @@ export class BrowserTracker {
 
         this._api.alarms.onAlarm.addListener(async (alarm: chrome.alarms.Alarm | browser.alarms.Alarm) => {
             if (alarm.name === 'updateTime') {
-                if (!this._config.isUserIdle) {
-                    await this._updateTimeWithCurrentTab();
-                }
-
                 try {
                     const idleState = await this._queryIdleState();
                     this._config.isUserIdle = idleState !== 'active';
+
                     if (this._config.isUserIdle) {
-                        this._sites.setCurrentFocus(null);
+                        this._sites.setCurrentFocus(IDLE_DOMAIN);
+                    } else {
+                        await this._updateTimeWithCurrentTab();
                     }
                 } catch (error) {
                     console.error('Error checking idle state:', error);
                 }
             }
-        }
-        );
+        });
     }
 
     private _queryIdleState(): Promise<chrome.idle.IdleState | browser.idle.IdleState> {
@@ -94,7 +93,6 @@ export class BrowserTracker {
 
             if (tabs.length === 1 && tabs[0].windowId) {
                 const domain = validateAndExtractDomain(tabs[0].url).domain;
-
                 this._sites.setCurrentFocus(domain);
             }
         } catch (error) {

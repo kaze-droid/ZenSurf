@@ -17,14 +17,20 @@ type ResponseBody = {
 }
 
 function IndexPopup() {
-
     // Storage handling
     const [allSitesTimes] = useStorage('allSitesTimes');
+
+    const isLockedInSite = (url: string) => {
+        if (url === '$idle') return false;
+
+        // TODO: Implement using Ram's code
+        return true;
+    }
 
     const dailyTimeSpent = useMemo((): number => {
         if (!allSitesTimes || !allSitesTimes[curDate]) return 0;
         return Object.values(allSitesTimes[curDate])
-            .reduce<number>((acc: number, site: SiteTime) => { return acc + site.totalMinutes }, 0)
+            .reduce<number>((acc: number, site: SiteTime) => { return acc + (isLockedInSite(site.url) ? 0 : site.totalMinutes) }, 0)
     }, [allSitesTimes, curDate]);
 
     const renderDailyTotal = useMemo(() => {
@@ -59,23 +65,21 @@ function IndexPopup() {
         optionsPort.send({ data: "alohomora" });
         return;
     }
+    const lockedInData = [
+        {
+            name: "Locked in time",
+            value: dailyTimeSpent
+        },
+        {
+            name: "Total Goal",
+            value: 3 * 60
+        },
+    ]
+
+    const lockedInColors = ['#DF3F17', '#878788'];
 
     return (
         <div className="flex flex-col h-44 w-80 text-[#ffffff]">
-            <div className="flex bg-container-outline">
-                <div className="flex px-4 pt-2 w-full">
-                    <div className="flex flex-col w-[80%]">
-                        <strong className="text-primary font-bold text-xl">ZenSurf</strong>
-                        <p className="italic text-muted">Stay focused, distraction free</p>
-                    </div>
-                    <div className="flex grow w-[20%] item-end justify-center">
-                        <div>
-                            <Logo className="my-auto h-16 w-16" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
 
             <div className="flex grow bg-background">
                 <div className="flex flex-col px-4 pb-4">
@@ -86,6 +90,8 @@ function IndexPopup() {
                                 <span className="w-1 h-1 rounded-full bg-secondary block animate-pulse-dot"></span>
                             </div>
                             {renderDailyTotal}
+
+
                         </div>
                     </div>
 
