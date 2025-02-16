@@ -3,6 +3,8 @@ import { Logo, RightArrow } from "~components/icons"
 import { usePort } from "@plasmohq/messaging/hook"
 import { curDate } from "~utils/dates"
 import { useStorage } from "@plasmohq/storage/hook"
+import { Flame } from "lucide-react"
+import axios from "axios"
 
 import "~style.css"
 import type { SiteTime } from "~tracker/types"
@@ -19,6 +21,7 @@ type ResponseBody = {
 function IndexPopup() {
     // Storage handling
     const [allSitesTimes] = useStorage('allSitesTimes');
+    const [walletId] = useStorage<string>('walletId');
 
     const isLockedInSite = (url: string) => {
         if (url === '$idle') return false;
@@ -26,6 +29,38 @@ function IndexPopup() {
         // TODO: Implement using Ram's code
         return true;
     }
+
+    const updateStreak = async (streakCounter: number) => {
+        try {
+            const response = await axios.put(`${process.env.PLASMO_PUBLIC_SERVER_URL}/new-user-streak`, { wallet_id: walletId, streak_count: streakCounter },
+                { headers: { 'Content-Type': 'application/json' } });
+        } catch (err) {
+        }
+    }
+    const getCurrentStreak = async () => {
+        const params = new URLSearchParams({
+            wallet_id: walletId
+        });
+
+        const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak?${params.toString()}`);
+
+        if (response) {
+            return response.data
+        }
+
+    }
+
+    // Assign currentStreak to 0 initially
+    let currentStreak = 0;
+
+    // Update currentStreak once the async function completes
+    getCurrentStreak().then(streak => {
+        currentStreak = streak;
+    }).catch(error => {
+        console.error("Error calculating streak:", error);
+    });
+
+    // Now currentStreak is 0 initially, and will be updated once the async function completes
 
     const dailyTimeSpent = useMemo((): number => {
         if (!allSitesTimes || !allSitesTimes[curDate]) return 0;
@@ -81,22 +116,44 @@ function IndexPopup() {
     return (
         <div className="flex flex-col h-44 w-80 text-[#ffffff]">
 
-            <div className="flex grow bg-background">
-                <div className="flex flex-col px-4 pb-4">
+            <div className="flex flex-col grow w-full bg-background">
 
-                    <div className="flex flex-col grow justify-center text-secondary">
+                <div className="flex flex-col w-full pb-4">
+                    <div className="flex bg-container-outline w-full">
+                        <div className="flex px-4 pt-2 w-full">
+                            <div className="flex flex-col w-[80%]">
+                                <strong className="text-primary font-bold text-xl">ZenSurf</strong>
+                                <p className="italic text-muted">Stay focused, distraction free</p>
+                            </div>
+                            <div className="flex grow w-[20%] item-end justify-center">
+                                <div>
+                                    <Logo className="my-auto h-16 w-16" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col w-full px-4 pb-4">
+
+                    <div className="flex flex-col space-y-2 grow justify-center text-secondary">
                         <div className="flex items-center">
                             <div className="w-4 transition-[padding] duration-300 ease-out">
                                 <span className="w-1 h-1 rounded-full bg-secondary block animate-pulse-dot"></span>
                             </div>
                             {renderDailyTotal}
-
-
                         </div>
+
+                        <div className="flex items-center">
+                            <Flame className="text-[#ec6453]" />
+                            <span className="text-[#ec6453] font-serif text-base pt-[4px]">Current active streak: {currentStreak}</span>
+                        </div>
+
+
                     </div>
 
 
-                    <div className="flex flex-col justify-end">
+                    <div className="flex flex-col pt-6 justify-end">
                         <div className="flex cursor-pointer h-9 p-2 items-center transition-all rounded-[4px]
                         focus-visible:outline focus-visible:outline-neutral-800
                         bg-primary-light hover:bg-primary active:scale-[98%] w-32" onClick={() => handleClick()}>

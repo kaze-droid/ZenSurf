@@ -235,13 +235,65 @@ fastify.post("/new-record", async (request, reply) => {
 });
 
 // Used to create a new streak in users table
-fastify.post("/new-user-streak", async (request, reply) => {
-    const { id, streak_count } = request.body;
-    const { error } = await supabase
-        .from('streak')
-        .insert({ user_id: id, streak_count: streak_count })
-    if (error == null) { console.log("Record creation successful") } else { reply.status(500).send({ error: "Error in creating new user streak", details: error.message }); }
-})
+fastify.put("/new-user-streak", async (request, reply) => {
+    const { wallet_id, streak_count } = request.body;
+    const int_streak_count = parseInt(streak_count);
+
+    if (!wallet_id) {
+        return reply.status(400).send({
+            error: "Missing wallet_id",
+            details: "Please provide a wallet_id in request body"
+        });
+    }
+
+    try {
+        // First verify the user exists and get their id
+        const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("user_id, wallet_id")
+            .eq("wallet_id", wallet_id)
+            .single();
+
+        if (userError || !userData) {
+            return reply.status(404).send({
+                error: "User not found",
+                details: "No user exists with the provided wallet ID"
+            });
+        }
+
+        // Upsert the streak count (update if exists, insert if doesn't exist)
+        const { data: upsertData, error: upsertError } = await supabase
+            .from('streak')
+            .upsert(
+                {
+                    user_id: userData.user_id,
+                    streak_count: int_streak_count
+                },
+                {
+                    onConflict: 'user_id',  // specify the unique constraint
+                    returning: 'minimal'     // or 'representation' if you want the full row back
+                }
+            )
+            .select();
+
+        if (upsertError) {
+            return reply.status(500).send({
+                error: "Error upserting streak",
+                details: upsertError.message
+            });
+        }
+
+        return reply.send({
+            message: "Successfully upserted streak",
+            updatedData: upsertData
+        });
+    } catch (err) {
+        return reply.status(500).send({
+            error: "Error in upserting user streak",
+            details: err.message
+        });
+    }
+});
 
 // Used to update meet_commit value
 fastify.put("/update-commit-value", async (request, reply) => {

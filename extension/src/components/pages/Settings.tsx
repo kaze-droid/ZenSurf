@@ -94,8 +94,6 @@ export default function Settings() {
     }
 
     const addUser = async () => {
-        axios.post(`${process.env.PLASMO_PUBLIC_SERVER_URL}/new-user`)
-
         const userInput = userInputRef.current?.value;
 
         if (!userInput || !userInput.startsWith('https://ilp.interledger-test.dev/')) {
@@ -118,6 +116,7 @@ export default function Settings() {
                 userInputRef.current.value = '';
             }
 
+            setWalletId(userInput);
             toast({
                 title: 'Success',
                 description: `Successfully added user!`

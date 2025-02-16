@@ -21,7 +21,7 @@ function Sidebar({ active, setActive }: SidebarProps) {
 
                 <div onClick={() => setActive(ActiveState.Dashboard)} className={`flex w-56 h-10 rounded-md -ml-4 cursor-pointer border-l-[4px] ${active == "dashboard" ? 'border-l-primary bg-container-outline' : 'border-transparent'}`}>
                     <div className="flex ml-6 space-x-2">
-                        <span className="uppercase text-sm flex items-center"><DashboardIcon className="h-5 w-5" /></span>
+                        <span className="uppercase text-sm flex items-center"><ChallengeIcon className="h-5 w-5" /></span>
                         <span className="uppercase text-sm flex items-center pb-[2px]">dashboard</span>
                     </div>
                 </div>
@@ -29,19 +29,10 @@ function Sidebar({ active, setActive }: SidebarProps) {
 
                 <div onClick={() => setActive(ActiveState.Challenges)} className={`flex w-56 h-10 rounded-md -ml-4 cursor-pointer border-l-[4px] ${active == "challenges" ? 'border-l-primary bg-container-outline' : 'border-transparent'}`}>
                     <div className="flex ml-6 space-x-2">
-                        <span className="uppercase text-sm flex items-center"><ChallengeIcon className="h-5 w-5" /></span>
-                        <span className="uppercase text-sm flex items-center pb-[2px]">challenges</span>
+                        <span className="uppercase text-sm flex items-center"><DashboardIcon className="h-5 w-5" /></span>
+                        <span className="uppercase text-sm flex items-center pb-[2px]">leaderboard</span>
                     </div>
                 </div>
-
-
-                <div onClick={() => setActive(ActiveState.Awards)} className={`flex w-56 h-10 rounded-md -ml-4 cursor-pointer border-l-[4px] ${active == "awards" ? 'border-l-primary bg-container-outline' : 'border-transparent'}`}>
-                    <div className="flex ml-6 space-x-2">
-                        <span className="uppercase text-sm flex items-center"><AwardIcon className="h-5 w-5" /></span>
-                        <span className="uppercase text-sm flex items-center pb-[2px]">awards</span>
-                    </div>
-                </div>
-
 
                 <div onClick={() => setActive(ActiveState.Settings)} className={`flex w-56 h-10 rounded-md -ml-4 cursor-pointer border-l-[4px] ${active == "settings" ? 'border-l-primary bg-container-outline' : 'border-transparent'}`}>
                     <div className="flex ml-6 space-x-2">

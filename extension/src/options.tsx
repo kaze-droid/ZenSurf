@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import Sidebar from '~components/Sidebar'
 import Dashboard from '~components/pages/Dashboard';
 import Challenges from '~components/pages/Challenges';
-import Awards from '~components/pages/Awards';
 import Settings from '~components/pages/Settings';
 
 import "~style.css"
@@ -10,7 +9,6 @@ import "~style.css"
 export enum ActiveState {
     Dashboard = 'dashboard',
     Challenges = 'challenges',
-    Awards = 'awards',
     Settings = 'settings'
 }
 
@@ -22,7 +20,6 @@ function Options() {
     const renderPage = {
         [ActiveState.Dashboard]: <Dashboard />,
         [ActiveState.Challenges]: <Challenges />,
-        [ActiveState.Awards]: <Awards />,
         [ActiveState.Settings]: <Settings />
     }
 
