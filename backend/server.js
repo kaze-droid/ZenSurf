@@ -518,63 +518,44 @@ function distributeRewards(rewards, merit) {
   return result;
 }
 
-// Helper function to calculate transfer amount based on duration and commit price
 function calculateTransferAmount(duration, commitPrice) {
-  return (commitPrice * (duration + 300) / 300) * 0.8; // Using 0.8 as the penalty factor
+  return (commitPrice * (duration + 300) / 300) * 0.8;
 }
 
-// Function to distribute rewards between negative and positive score users
 function calculateTransfers(activeUsersData) {
-  // Separate users into negative and positive duration groups
-  const negativeUsers = activeUsersData
-      .filter(user => user.duration < 0)
+  const negativeUsers = activeUsersData.filter(user => user.duration < 0)
       .map(user => ({
           ...user,
           transferAmount: calculateTransferAmount(user.duration, user.commit_price)
       }))
-      .sort((a, b) => b.transferAmount - a.transferAmount); // Sort by transfer amount descending
+      .sort((a, b) => b.transferAmount - a.transferAmount);
 
-  const positiveUsers = activeUsersData
-      .filter(user => user.duration >= 0)
-      .sort((a, b) => b.duration - a.duration); // Sort by duration descending
+  const positiveUsers = activeUsersData.filter(user => user.duration >= 0)
+      .sort((a, b) => b.streak_count - a.streak_count);
 
+  const totalStreaks = positiveUsers.reduce((sum, user) => sum + user.streak_count, 0);
   const transfers = [];
 
-  if (negativeUsers.length === 0 || positiveUsers.length === 0) {
-      return transfers;
-  }
+  if (!negativeUsers.length || !positiveUsers.length || totalStreaks === 0) return transfers;
 
-  let positiveIndex = 0;
-  
-  // Distribute transfers using greedy algorithm
   for (const sender of negativeUsers) {
       let remainingAmount = sender.transferAmount;
       
-      while (remainingAmount > 0 && positiveIndex < positiveUsers.length) {
-          const receiver = positiveUsers[positiveIndex];
+      for (const receiver of positiveUsers) {
+          if (remainingAmount <= 0) break;
           
-          // Calculate transfer amount (you can adjust this logic based on your needs)
-          const transferAmount = Math.min(remainingAmount, sender.transferAmount / positiveUsers.length);
+          const weight = receiver.streak_count / totalStreaks;
+          const transferAmount = Math.min(remainingAmount, sender.transferAmount * weight);
           
-          if (transferAmount > 0) {
-              transfers.push({
-                  from: {
-                      walletId: sender.wallet_id,
-                      accessToken: sender.access_token
-                  },
-                  to: {
-                      walletId: receiver.wallet_id,
-                      accessToken: receiver.access_token
-                  },
-                  amount: Number(transferAmount.toFixed(2))
-              });
-          }
+          transfers.push({
+              from: { walletId: sender.wallet_id, accessToken: sender.access_token },
+              to: { walletId: receiver.wallet_id, accessToken: receiver.access_token },
+              amount: Number(transferAmount.toFixed(2))
+          });
           
           remainingAmount -= transferAmount;
-          positiveIndex = (positiveIndex + 1) % positiveUsers.length;
       }
   }
-
   return transfers;
 }
 
@@ -634,32 +615,7 @@ fastify.get('/distribute-rewards', async (request, reply) => {
 
     console.log("Active users with data:", activeUsersData);
 
-    const transfers = calculateTransfers([
-      {
-        user_id: 1,
-        wallet_id: 'https://ilp.interledger-test.dev/f8e702a',
-        streak_count: 3,
-        access_token: 'ED621C9746A9657B5CEB',
-        duration: 120,
-        commit_price: 5
-      },
-      {
-        user_id: 3,
-        wallet_id: 'https://ilp.interledger-test.dev/f8e702a',
-        streak_count: 10,
-        access_token: 'ED621C9746A9657B5CEB',
-        duration: 220,
-        commit_price: 5
-      },
-      {
-        user_id: 7,
-        wallet_id: 'https://ilp.interledger-test.dev/c163a9e7',
-        streak_count: 42,
-        access_token: '7D7ACA794DDDA2CD8A5A',
-        duration: -177,
-        commit_price: 10
-      }
-    ]);
+    const transfers = calculateTransfers(activeUsersData);
     console.log("Transfers:", transfers[0].from.walletId, transfers[0].to.walletId, transfers[0].amount);
 
     return reply.send({
