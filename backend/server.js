@@ -84,15 +84,35 @@ async function sendMoney(client, senderWalletAddress, receiverWalletAddress, amo
 fastify.get("/leaderboard", async (request, reply) => {
     const { data, error } = await supabase
         .from("streak")
-        .select()
-        .order("streak_count", { ascending: false });
+        .select(`
+            user_id,
+            streak_count,
+            users (
+                wallet_id
+            )
+        `)
+        .order("streak_count", { ascending: false })
+        .not("users", "is", null);  // Ensure we only get records with valid user data
 
-    if (error == null) { reply.send(data) } else { reply.status(500).send({ error: "Error in displaying leaderboard", details: error.message }); }
+    if (error) {
+        return reply.status(500).send({
+            error: "Error in displaying leaderboard",
+            details: error.message
+        });
+    }
+
+    // Transform the data to flatten the structure
+    const formattedData = data.map(record => ({
+        user_id: record.user_id,
+        wallet_id: record.users.wallet_id,
+        streak_count: record.streak_count
+    }));
+
+    reply.send(formattedData);
 });
 
 fastify.get("/get-streak/", async (request, reply) => {
-    const wallet_id = request.query.wallet_id;
-    const walletId = `https://ilp.interledger-test.dev/${wallet_id}`;
+    const walletId = request.query.wallet_id;
 
     if (!walletId) {
         return reply.status(400).send({
@@ -159,83 +179,83 @@ fastify.post("/new-user", async (request, reply) => {
 
 // Used to create a new record in log table
 fastify.post("/new-record", async (request, reply) => {
-  // get user id from users table
-  const { wallet_id, duration_commit, duration, commit_price, accessToken } = request.body;
-  console.log("Request body:", request.body);
-  // round duration_commit to int
-  const roundedDurationCommit = Math.round(duration_commit);
-  // round duration to int
-  const roundedDuration = Math.round(duration);
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('user_id')
-    .eq('wallet_id', wallet_id)
-    .single();
-  if (userError) {
-    return reply.status(500).send({ error: "Error in getting user id", details: userError.message });
-  }
+    // get user id from users table
+    const { wallet_id, duration_commit, duration, commit_price, accessToken } = request.body;
+    console.log("Request body:", request.body);
+    // round duration_commit to int
+    const roundedDurationCommit = Math.round(duration_commit);
+    // round duration to int
+    const roundedDuration = Math.round(duration);
+    const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('wallet_id', wallet_id)
+        .single();
+    if (userError) {
+        return reply.status(500).send({ error: "Error in getting user id", details: userError.message });
+    }
 
-  console.info("User data:", userData);
+    console.info("User data:", userData);
 
-  // Get today's date in UTC and set time to start of day
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
+    // Get today's date in UTC and set time to start of day
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
 
-  // Check if record exists for today
-  const { data: existingRecord, error: checkError } = await supabase
-    .from('logs')
-    .select('*')
-    .eq('user_id', userData.user_id)
-    .gte('date', today.toISOString())
-    .lt('date', new Date(today.getTime() + 86400000).toISOString())
-    .single();
-  
-  console.info("Existing record:", existingRecord);
+    // Check if record exists for today
+    const { data: existingRecord, error: checkError } = await supabase
+        .from('logs')
+        .select('*')
+        .eq('user_id', userData.user_id)
+        .gte('date', today.toISOString())
+        .lt('date', new Date(today.getTime() + 86400000).toISOString())
+        .single();
 
-  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
-    return reply.status(500).send({ error: "Error checking existing record", details: checkError.message });
-  }
+    console.info("Existing record:", existingRecord);
 
-  let result;
-  if (existingRecord) {
-    // Update existing record using userId and date
-    result = await supabase
-      .from('logs')
-      .update({ 
-        duration_commited: roundedDurationCommit, 
-        duration: roundedDuration, 
-        commit_price: commit_price,
-        access_token: accessToken
-      })
-      .eq('user_id', userData.user_id)
-      .gte('date', today.toISOString())
-      .lt('date', new Date(today.getTime() + 86400000).toISOString());
-  } else {
-    // Insert new record
-    result = await supabase
-      .from('logs')
-      .insert({ 
-        user_id: userData.user_id, 
-        duration_commited: roundedDurationCommit, 
-        duration: roundedDuration, 
-        commit_price: commit_price,
-        access_token: accessToken
-      });
-  }
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
+        return reply.status(500).send({ error: "Error checking existing record", details: checkError.message });
+    }
 
-  console.info("Result:", result);
+    let result;
+    if (existingRecord) {
+        // Update existing record using userId and date
+        result = await supabase
+            .from('logs')
+            .update({
+                duration_commited: roundedDurationCommit,
+                duration: roundedDuration,
+                commit_price: commit_price,
+                access_token: accessToken
+            })
+            .eq('user_id', userData.user_id)
+            .gte('date', today.toISOString())
+            .lt('date', new Date(today.getTime() + 86400000).toISOString());
+    } else {
+        // Insert new record
+        result = await supabase
+            .from('logs')
+            .insert({
+                user_id: userData.user_id,
+                duration_commited: roundedDurationCommit,
+                duration: roundedDuration,
+                commit_price: commit_price,
+                access_token: accessToken
+            });
+    }
 
-  if (result.error) {
-    return reply.status(500).send({ 
-      error: `Error ${existingRecord ? 'updating' : 'creating'} record`, 
-      details: result.error.message 
+    console.info("Result:", result);
+
+    if (result.error) {
+        return reply.status(500).send({
+            error: `Error ${existingRecord ? 'updating' : 'creating'} record`,
+            details: result.error.message
+        });
+    }
+
+    reply.send({
+        message: `Record ${existingRecord ? 'updated' : 'created'} successfully`,
+        isNewRecord: !existingRecord
     });
-  }
-
-  reply.send({ 
-    message: `Record ${existingRecord ? 'updated' : 'created'} successfully`,
-    isNewRecord: !existingRecord
-  });
 });
 
 // Used to create a new streak in users table
@@ -404,20 +424,6 @@ fastify.post('/initiate-payment', async (request, reply) => {
     }
 });
 
-
-fastify.post("/get-continue-uri", async (request, reply) => {
-    const { grantAccessToken, grantContinueUri } = request.body;
-    
-    const client = await createAuthenticatedClient({
-        walletAddressUrl: CLIENT_WALLET,
-        privateKey: WALLET_PRIVATE_KEY,
-        keyId: WALLET_KEY_ID,
-    });
-
-    const continueUri = await client.grant.continue({ url: grantContinueUri, accessToken: grantAccessToken });
-    reply.send({ access_token: continueUri.access_token.value });
-})
-
 fastify.post('/split-payment', async (request, reply) => {
     const { grantContinueUri, grantAccessToken, senderWallet, receiverWallet, max_amount, splits } = request.body;
     const splitCount = parseInt(splits) || 2; // Default to 2 if not specified
@@ -499,23 +505,23 @@ fastify.listen({ port: 3000 }, (err, address) => {
 
 
 function distributeRewards(rewards, merit) {
-  // Sort the rewards array in descending order
-  rewards.sort((a, b) => b - a);
-  
-  // Sort the merit array in descending order, while keeping track of original indices
-  const meritWithIndices = merit.map((value, index) => ({ merit: value, index }));
-  meritWithIndices.sort((a, b) => b.merit - a.merit);
+    // Sort the rewards array in descending order
+    rewards.sort((a, b) => b - a);
 
-  // Initialize the result object to store distributed rewards
-  const result = {};
+    // Sort the merit array in descending order, while keeping track of original indices
+    const meritWithIndices = merit.map((value, index) => ({ merit: value, index }));
+    meritWithIndices.sort((a, b) => b.merit - a.merit);
 
-  // Distribute the rewards
-  for (let i = 0; i < meritWithIndices.length; i++) {
-      result[meritWithIndices[i].merit] = result[meritWithIndices[i].merit] || [];
-      result[meritWithIndices[i].merit].push(rewards[i]);
-  }
+    // Initialize the result object to store distributed rewards
+    const result = {};
 
-  return result;
+    // Distribute the rewards
+    for (let i = 0; i < meritWithIndices.length; i++) {
+        result[meritWithIndices[i].merit] = result[meritWithIndices[i].merit] || [];
+        result[meritWithIndices[i].merit].push(rewards[i]);
+    }
+
+    return result;
 }
 
 fastify.get('/distribute-rewards', async (request, reply) => {
@@ -548,7 +554,7 @@ fastify.get('/distribute-rewards', async (request, reply) => {
         .select('user_id, date, access_token')
         .in('user_id', users.map(user => user.user_id))
         .gte('date', today.toISOString())
-        .lt('date', new Date(today.getTime() + 86400000).toISOString());  
+        .lt('date', new Date(today.getTime() + 86400000).toISOString());
 
     if (logsError) {
         return reply.status(500).send({ error: "Error in getting logs", details: logsError.message });
@@ -556,7 +562,7 @@ fastify.get('/distribute-rewards', async (request, reply) => {
 
     // create a list of users who have a log for today
     const activeUserIds = new Set(logs.map(log => log.user_id));
-    
+
     // Combine all data for active users
     const activeUsersData = users
         .filter(user => activeUserIds.has(user.user_id))
@@ -571,6 +577,6 @@ fastify.get('/distribute-rewards', async (request, reply) => {
         });
 
     console.log("Active users with data:", activeUsersData);
-    
+
     return reply.send(activeUsersData);
 });

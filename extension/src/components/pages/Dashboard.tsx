@@ -158,7 +158,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[30%] h-full'>
-                    <h2 className="text-2xl bold font-serif">Money Earned</h2>
+                    <h2 className="text-2xl bold">Money Earned</h2>
                 </div>
 
             </div>
