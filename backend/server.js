@@ -159,7 +159,8 @@ fastify.post("/new-user", async (request, reply) => {
 // Used to create a new record in log table
 fastify.post("/new-record", async (request, reply) => {
   // get user id from users table
-  const { wallet_id, duration_commit, duration, commit_price } = request.body;
+  const { wallet_id, duration_commit, duration, commit_price, accessToken } = request.body;
+  console.log("Request body:", request.body);
   // round duration_commit to int
   const roundedDurationCommit = Math.round(duration_commit);
   // round duration to int
@@ -202,7 +203,8 @@ fastify.post("/new-record", async (request, reply) => {
       .update({ 
         duration_commited: roundedDurationCommit, 
         duration: roundedDuration, 
-        commit_price: commit_price 
+        commit_price: commit_price,
+        access_token: accessToken
       })
       .eq('user_id', userData.user_id)
       .gte('date', today.toISOString())
@@ -215,7 +217,8 @@ fastify.post("/new-record", async (request, reply) => {
         user_id: userData.user_id, 
         duration_commited: roundedDurationCommit, 
         duration: roundedDuration, 
-        commit_price: commit_price 
+        commit_price: commit_price,
+        access_token: accessToken
       });
   }
 
