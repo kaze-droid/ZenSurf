@@ -39,7 +39,7 @@ function IndexPopup() {
     }
     const getCurrentStreak = async () => {
         const params = new URLSearchParams({
-            wallet_id: walletId
+            wallet_id: walletId.split('/')[3]
         });
 
         const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak?${params.toString()}`);

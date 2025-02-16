@@ -4,7 +4,7 @@ export type RechartDatum = {
 }
 
 export type RechartProps = {
-    colors: string[];
+    colors?: string[];
     data: RechartDatum[];
     className?: string;
 }
