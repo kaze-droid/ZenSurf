@@ -1,13 +1,19 @@
-import React, { useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import LockedInChart from '~components/ui/recharts/lockedInChart'
 import { useStorage } from "@plasmohq/storage/hook"
 import { curDate } from '~utils/dates';
 import type { SiteTime } from '~tracker/types';
 import TimeSpentHeatmap from '~components/ui/recharts/timeSpentHeatmap';
 import { Flame } from 'lucide-react';
+import axios from 'axios';
+import ActiveShapePieChart from '~components/ui/recharts/activeShapePieChart';
 
 export default function Dashboard() {
     const [allSitesTimes, setAllSitesTimes] = useStorage('allSitesTimes', (v) => v === undefined ? {} : v);
+    const [walletId] = useStorage('walletId');
+
+
+    const [donutSplitData, setDonutSplitData] = useState([]);
 
     const isLockedInSite = (url: string) => {
         if (url === '$idle') return false;
@@ -42,6 +48,27 @@ export default function Dashboard() {
         return `Time left for streak: ${TimeUnit(dailyHoursSpent, "hour")}${TimeUnit(dailyMinutesSpent, "minute")}`
     }, [dailyTimeSpent]);
 
+    const getDonutSplitData = async () => {
+        if (!allSitesTimes || !allSitesTimes[curDate]) return [];
+
+        const newArr = [];
+
+        for (let urlTime of Object.values(allSitesTimes[curDate])) {
+            const { url, totalMinutes } = urlTime as SiteTime;
+            if (!url || !totalMinutes) continue;
+
+            newArr.push({ name: url, value: totalMinutes });
+        }
+
+        return newArr;
+    };
+
+
+    useEffect(() => {
+        getDonutSplitData()
+            .then(data => setDonutSplitData(data))
+            .catch(error => console.error("Error calculating distribution:", error));
+    }, [curDate, allSitesTimes]); // Add appropriate dependencies
 
     const lockedInData = [
         {
@@ -98,20 +125,46 @@ export default function Dashboard() {
         return allData;
     }, [allSitesTimes]);
 
+    const getCurrentStreak = async () => {
+        if (!walletId) return 0;
+        const params = new URLSearchParams({
+            wallet_id: walletId.split('/')[3]
+        });
+
+        const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak?${params.toString()}`);
+
+        if (response) {
+            return response.data
+        }
+
+    }
+
+    // Assign currentStreak to 0 initially
+    let currentStreak = 0;
+
+    // Update currentStreak once the async function completes
+    getCurrentStreak().then(streak => {
+        currentStreak = streak;
+    }).catch(error => {
+        console.error("Error calculating streak:", error);
+    });
+
     return (
         <div className='space-y-3 flex flex-col w-full h-full'>
-            <div className='flex space-x-3 w-full h-[33%]'>
+            <div className='flex space-x-3 w-full h-[50%]'>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[70%] h-full'>
                     <TimeSpentHeatmap data={timeSpentData} />
                 </div>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[30%] h-full'>
+                    <h2 className="text-2xl bold font-serif">Money Earned</h2>
                 </div>
+
             </div>
 
 
-            <div className='flex space-x-3 w-full h-[33%]'>
+            <div className='flex space-x-3 w-full h-[50%]'>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[33%] h-full justify-center items-center'>
                     <LockedInChart data={lockedInData} colors={lockedInColors} height={300} width={300} />
@@ -119,27 +172,19 @@ export default function Dashboard() {
                 </div>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 pb-0 w-[33%] h-full items-center justify-center'>
-                    <Flame className="text-[#ec6453] h-36 w-36" />
+                    <Flame fill="#ec6453" className="text-[#ec6453] h-36 w-36" />
 
-                    <div className='z-1 relative text-muted font-mono mt-3'>Achieved numDays streak</div>
+                    <div className='z-1 relative text-muted font-mono mt-6'>Achieved {currentStreak} day streak</div>
                 </div>
 
 
-                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[33%] h-full'>
+                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[33%] h-full items-center justify-center'>
+                    <ActiveShapePieChart data={donutSplitData} height={300} width={350} />
+                    <div className='z-1 relative bottom-[3.25rem] text-muted font-mono'>Time Spent Distribution</div>
                 </div>
 
             </div>
 
-            <div className='flex space-x-3 w-full h-[33%]'>
-
-                {/* Blacklist sites container */}
-                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[60%] h-full'>
-                </div>
-
-                {/* Blacklist sites explanation */}
-                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[40%] h-full'>
-                </div>
-            </div>
         </div>
     )
 }

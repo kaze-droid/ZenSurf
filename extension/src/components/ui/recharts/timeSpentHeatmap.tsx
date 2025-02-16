@@ -57,32 +57,32 @@ const TimeSpentHeatmap = ({ data }) => {
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return (
-        <Card className="w-full">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Time Spent Activity</CardTitle>
+        <Card className="w-full max-w-4xl">
+            <CardHeader className="pb-4">
+                <CardTitle className="text-2xl">Time Spent Activity</CardTitle>
             </CardHeader>
             <CardContent>
                 <div className="flex">
-                    <div className="mr-1">
+                    <div className="mr-2">
                         {weekdays.map((day, i) => (
-                            <div key={day} className="h-3 text-xs text-gray-400 mb-[2px]">
-                                {i % 2 === 0 ? day[0] : ''}
+                            <div key={day} className="h-6 text-sm text-gray-400 mb-1">
+                                {i % 2 === 0 ? day : ''}
                             </div>
                         ))}
                     </div>
-                    <div className="flex gap-[2px]">
+                    <div className="flex gap-1">
                         {weeks.map((week, weekIndex) => (
-                            <div key={weekIndex} className="flex flex-col gap-[2px]">
+                            <div key={weekIndex} className="flex flex-col gap-1">
                                 {week.map((day) => (
                                     <TooltipProvider key={day.date}>
                                         <Tooltip>
                                             <TooltipTrigger>
                                                 <div
-                                                    className={`w-3 h-3 rounded-sm ${getColor(day.timeSpent)}`}
+                                                    className={`w-6 h-6 rounded ${getColor(day.timeSpent)}`}
                                                 />
                                             </TooltipTrigger>
                                             <TooltipContent>
-                                                <p className="text-xs">{day.date}: {day.timeSpent || 0} minutes</p>
+                                                <p className="text-sm">{day.date}: {day.timeSpent || 0} minutes</p>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
@@ -91,13 +91,13 @@ const TimeSpentHeatmap = ({ data }) => {
                         ))}
                     </div>
                 </div>
-                <div className="mt-2 flex items-center gap-1 text-xs">
+                <div className="mt-4 flex items-center gap-2 text-sm">
                     <span>Less</span>
-                    <div className="w-3 h-3 bg-gray-100 rounded-sm" />
-                    <div className="w-3 h-3 bg-orange-100 rounded-sm" />
-                    <div className="w-3 h-3 bg-orange-200 rounded-sm" />
-                    <div className="w-3 h-3 bg-orange-300 rounded-sm" />
-                    <div className="w-3 h-3 bg-orange-400 rounded-sm" />
+                    <div className="w-6 h-6 bg-gray-100 rounded" />
+                    <div className="w-6 h-6 bg-orange-100 rounded" />
+                    <div className="w-6 h-6 bg-orange-200 rounded" />
+                    <div className="w-6 h-6 bg-orange-300 rounded" />
+                    <div className="w-6 h-6 bg-orange-400 rounded" />
                     <span>More</span>
                 </div>
             </CardContent>

@@ -91,7 +91,8 @@ fastify.get("/leaderboard", async (request, reply) => {
 });
 
 fastify.get("/get-streak/", async (request, reply) => {
-    const walletId = request.query.wallet_id;
+    const wallet_id = request.query.wallet_id;
+    const walletId = `https://ilp.interledger-test.dev/${wallet_id}`;
 
     if (!walletId) {
         return reply.status(400).send({
