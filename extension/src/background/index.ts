@@ -60,13 +60,14 @@ setInterval(async () => {
     // get all sites times for today's date
     const todaySitesTimes = allSitesTimes[`${todayDate}-${todayMonth}-${todayYear}`];
     console.info("Today's sites times:", allSitesTimes, `${todayDate}-${todayMonth}-${todayYear}`);
-    // Get today's goal, blocked topics, blocked sites, and wallet ID
-    const [userGoal, blockedTopics, blockedSites, walletId, paidAmount] = await Promise.all([
+    // Get today's goal, blocked topics, blocked sites, wallet ID, and tokens
+    const [userGoal, blockedTopics, blockedSites, walletId, paidAmount, accessTokenWithDate] = await Promise.all([
         globalStore.getUserGoal(),
         globalStore.getBlockedTopics(),
         globalStore.getAllBlockedSites(),
         globalStore.getWalletId(),
-        globalStore._store.getFromStorage('paidAmount')
+        globalStore._store.getFromStorage('paidAmount'),
+        globalStore._store.getFromStorage('accessToken')
     ]);
 
     // Get today's date in MM/DD/YYYY format
@@ -76,17 +77,23 @@ setInterval(async () => {
         day: '2-digit' 
     });
 
-    // Extract amount if paidAmount exists and is from today
+    // Extract tokens if they exist and are from today
     const todaysPaidAmount = paidAmount ? (() => {
         const [amount, date] = paidAmount.split('|');
         return date === todayDateStr ? amount : null;
     })() : null;
 
+    const accessToken = accessTokenWithDate ? (() => {
+        const [token, date] = accessTokenWithDate.split('|');
+        return date === todayDateStr ? token : null;
+    })() : null;
+
     console.info("Today's date:", todaySitesTimes);
     console.info("Currently blocked topics:", blockedTopics);
-    console.info("Currently blocked sites:", Array.from(blockedSites)); // Convert Set to Array for better logging
+    console.info("Currently blocked sites:", Array.from(blockedSites));
     console.info("Current wallet ID:", walletId);
     console.info("Today's paid amount:", todaysPaidAmount ? `$${todaysPaidAmount}` : "Not set");
+    console.info("Today's access token:", accessToken );
 
     
     if (userGoal) {
@@ -117,7 +124,8 @@ setInterval(async () => {
                 wallet_id: walletId,
                 duration_commit: totalMinutes,
                 duration: goalMins,
-                commit_price: todaysPaidAmount ? parseFloat(todaysPaidAmount) : 0.0
+                commit_price: todaysPaidAmount ? parseFloat(todaysPaidAmount) : 0.0,
+                accessToken: accessToken
             })
         });
         
