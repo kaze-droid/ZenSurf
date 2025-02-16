@@ -105,9 +105,17 @@ async function testPaymentAPISplits(senderWallet, receiverWallet) {
     }
 }
 
+async function testDistributeRewards() {
+    const response = await axios.get('http://localhost:3000/distribute-rewards');
+    console.log("Rewards Distributed:", response.data);
+    return response.data;
+}
+
 const senderWallet = "https://ilp.interledger-test.dev/c163a9e7";
 const receiverWallet = "https://ilp.interledger-test.dev/1b62a0b8";
 
 // testPaymentAPI(senderWallet, receiverWallet);
 // testPaymentAPITwice(senderWallet, receiverWallet);
-testPaymentAPISplits(senderWallet, receiverWallet);
+// testPaymentAPISplits(senderWallet, receiverWallet);
+
+testDistributeRewards();
