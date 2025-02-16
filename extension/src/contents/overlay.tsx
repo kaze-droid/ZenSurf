@@ -116,7 +116,7 @@ const PlasmoPricingExtra = ({ domain }) => {
                     top: "6vh",
                     left: "90vw",
                     width: "8vw",
-                    height: "8vw",
+                    height: "18vh",
                     pointerEvents: "none"
                 }}
             />}
@@ -132,7 +132,7 @@ const PlasmoPricingExtra = ({ domain }) => {
                             top: "4vh",
                             left: "82vw",
                             width: "10vw",
-                            height: "10vw",
+                            height: "20vh",
                             pointerEvents: "none"
                         }}
                     />
@@ -142,7 +142,7 @@ const PlasmoPricingExtra = ({ domain }) => {
                         top: "5vh",
                         left: "83vw",
                         width: "8vw",
-                        height: "10vw",
+                        height: "20vh",
                         pointerEvents: "none",
                         fontWeight: "bold",
                         textAlign: "center",
