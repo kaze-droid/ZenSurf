@@ -108,6 +108,8 @@ async function testPaymentAPISplits(senderWallet, receiverWallet) {
 async function testDistributeRewards() {
     const response = await axios.get('http://localhost:3000/distribute-rewards');
     console.log("Rewards Distributed:", response.data);
+    console.log("Transfers:", response.data.transfers[0].from.walletId, response.data.transfers[0].to.walletId, response.data.transfers[0].amount);
+    console.log("Transfers:", response.data.transfers[1].from.walletId, response.data.transfers[1].to.walletId, response.data.transfers[1].amount);
     return response.data;
 }
 
