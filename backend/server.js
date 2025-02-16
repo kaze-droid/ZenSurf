@@ -30,7 +30,7 @@ async function sendMoney(client, senderWalletAddress, receiverWalletAddress, amo
         incomingAmount: {
             assetCode: receiverWalletAddress.assetCode,
             assetScale: receiverWalletAddress.assetScale,
-            value: String(amount)
+            value: String(Math.round(amount))
         }
     });
     console.log("Created incoming payment:", { id: incomingPayment.id });
@@ -84,35 +84,15 @@ async function sendMoney(client, senderWalletAddress, receiverWalletAddress, amo
 fastify.get("/leaderboard", async (request, reply) => {
     const { data, error } = await supabase
         .from("streak")
-        .select(`
-            user_id,
-            streak_count,
-            users (
-                wallet_id
-            )
-        `)
-        .order("streak_count", { ascending: false })
-        .not("users", "is", null);  // Ensure we only get records with valid user data
+        .select()
+        .order("streak_count", { ascending: false });
 
-    if (error) {
-        return reply.status(500).send({
-            error: "Error in displaying leaderboard",
-            details: error.message
-        });
-    }
-
-    // Transform the data to flatten the structure
-    const formattedData = data.map(record => ({
-        user_id: record.user_id,
-        wallet_id: record.users.wallet_id,
-        streak_count: record.streak_count
-    }));
-
-    reply.send(formattedData);
+    if (error == null) { reply.send(data) } else { reply.status(500).send({ error: "Error in displaying leaderboard", details: error.message }); }
 });
 
 fastify.get("/get-streak/", async (request, reply) => {
-    const walletId = request.query.wallet_id;
+    const wallet_id = request.query.wallet_id;
+    const walletId = `https://ilp.interledger-test.dev/${wallet_id}`;
 
     if (!walletId) {
         return reply.status(400).send({
@@ -179,83 +159,83 @@ fastify.post("/new-user", async (request, reply) => {
 
 // Used to create a new record in log table
 fastify.post("/new-record", async (request, reply) => {
-    // get user id from users table
-    const { wallet_id, duration_commit, duration, commit_price, accessToken } = request.body;
-    console.log("Request body:", request.body);
-    // round duration_commit to int
-    const roundedDurationCommit = Math.round(duration_commit);
-    // round duration to int
-    const roundedDuration = Math.round(duration);
-    const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('user_id')
-        .eq('wallet_id', wallet_id)
-        .single();
-    if (userError) {
-        return reply.status(500).send({ error: "Error in getting user id", details: userError.message });
-    }
+  // get user id from users table
+  const { wallet_id, duration_commit, duration, commit_price, accessToken } = request.body;
+  console.log("Request body:", request.body);
+  // round duration_commit to int
+  const roundedDurationCommit = Math.round(duration_commit);
+  // round duration to int
+  const roundedDuration = Math.round(duration);
+  const { data: userData, error: userError } = await supabase
+    .from('users')
+    .select('user_id')
+    .eq('wallet_id', wallet_id)
+    .single();
+  if (userError) {
+    return reply.status(500).send({ error: "Error in getting user id", details: userError.message });
+  }
 
-    console.info("User data:", userData);
+  console.info("User data:", userData);
 
-    // Get today's date in UTC and set time to start of day
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+  // Get today's date in UTC and set time to start of day
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
 
-    // Check if record exists for today
-    const { data: existingRecord, error: checkError } = await supabase
-        .from('logs')
-        .select('*')
-        .eq('user_id', userData.user_id)
-        .gte('date', today.toISOString())
-        .lt('date', new Date(today.getTime() + 86400000).toISOString())
-        .single();
+  // Check if record exists for today
+  const { data: existingRecord, error: checkError } = await supabase
+    .from('logs')
+    .select('*')
+    .eq('user_id', userData.user_id)
+    .gte('date', today.toISOString())
+    .lt('date', new Date(today.getTime() + 86400000).toISOString())
+    .single();
+  
+  console.info("Existing record:", existingRecord);
 
-    console.info("Existing record:", existingRecord);
+  if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
+    return reply.status(500).send({ error: "Error checking existing record", details: checkError.message });
+  }
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 means no rows returned
-        return reply.status(500).send({ error: "Error checking existing record", details: checkError.message });
-    }
+  let result;
+  if (existingRecord) {
+    // Update existing record using userId and date
+    result = await supabase
+      .from('logs')
+      .update({ 
+        duration_commited: roundedDurationCommit, 
+        duration: roundedDuration, 
+        commit_price: commit_price,
+        access_token: accessToken
+      })
+      .eq('user_id', userData.user_id)
+      .gte('date', today.toISOString())
+      .lt('date', new Date(today.getTime() + 86400000).toISOString());
+  } else {
+    // Insert new record
+    result = await supabase
+      .from('logs')
+      .insert({ 
+        user_id: userData.user_id, 
+        duration_commited: roundedDurationCommit, 
+        duration: roundedDuration, 
+        commit_price: commit_price,
+        access_token: accessToken
+      });
+  }
 
-    let result;
-    if (existingRecord) {
-        // Update existing record using userId and date
-        result = await supabase
-            .from('logs')
-            .update({
-                duration_commited: roundedDurationCommit,
-                duration: roundedDuration,
-                commit_price: commit_price,
-                access_token: accessToken
-            })
-            .eq('user_id', userData.user_id)
-            .gte('date', today.toISOString())
-            .lt('date', new Date(today.getTime() + 86400000).toISOString());
-    } else {
-        // Insert new record
-        result = await supabase
-            .from('logs')
-            .insert({
-                user_id: userData.user_id,
-                duration_commited: roundedDurationCommit,
-                duration: roundedDuration,
-                commit_price: commit_price,
-                access_token: accessToken
-            });
-    }
+  console.info("Result:", result);
 
-    console.info("Result:", result);
-
-    if (result.error) {
-        return reply.status(500).send({
-            error: `Error ${existingRecord ? 'updating' : 'creating'} record`,
-            details: result.error.message
-        });
-    }
-
-    reply.send({
-        message: `Record ${existingRecord ? 'updated' : 'created'} successfully`,
-        isNewRecord: !existingRecord
+  if (result.error) {
+    return reply.status(500).send({ 
+      error: `Error ${existingRecord ? 'updating' : 'creating'} record`, 
+      details: result.error.message 
     });
+  }
+
+  reply.send({ 
+    message: `Record ${existingRecord ? 'updated' : 'created'} successfully`,
+    isNewRecord: !existingRecord
+  });
 });
 
 // Used to create a new streak in users table
@@ -424,6 +404,20 @@ fastify.post('/initiate-payment', async (request, reply) => {
     }
 });
 
+
+fastify.post("/get-continue-uri", async (request, reply) => {
+    const { grantAccessToken, grantContinueUri } = request.body;
+    
+    const client = await createAuthenticatedClient({
+        walletAddressUrl: CLIENT_WALLET,
+        privateKey: WALLET_PRIVATE_KEY,
+        keyId: WALLET_KEY_ID,
+    });
+
+    const continueUri = await client.grant.continue({ url: grantContinueUri, accessToken: grantAccessToken });
+    reply.send({ access_token: continueUri.access_token.value });
+})
+
 fastify.post('/split-payment', async (request, reply) => {
     const { grantContinueUri, grantAccessToken, senderWallet, receiverWallet, max_amount, splits } = request.body;
     const splitCount = parseInt(splits) || 2; // Default to 2 if not specified
@@ -505,23 +499,64 @@ fastify.listen({ port: 3000 }, (err, address) => {
 
 
 function distributeRewards(rewards, merit) {
-    // Sort the rewards array in descending order
-    rewards.sort((a, b) => b - a);
+  // Sort the rewards array in descending order
+  rewards.sort((a, b) => b - a);
+  
+  // Sort the merit array in descending order, while keeping track of original indices
+  const meritWithIndices = merit.map((value, index) => ({ merit: value, index }));
+  meritWithIndices.sort((a, b) => b.merit - a.merit);
 
-    // Sort the merit array in descending order, while keeping track of original indices
-    const meritWithIndices = merit.map((value, index) => ({ merit: value, index }));
-    meritWithIndices.sort((a, b) => b.merit - a.merit);
+  // Initialize the result object to store distributed rewards
+  const result = {};
 
-    // Initialize the result object to store distributed rewards
-    const result = {};
+  // Distribute the rewards
+  for (let i = 0; i < meritWithIndices.length; i++) {
+      result[meritWithIndices[i].merit] = result[meritWithIndices[i].merit] || [];
+      result[meritWithIndices[i].merit].push(rewards[i]);
+  }
 
-    // Distribute the rewards
-    for (let i = 0; i < meritWithIndices.length; i++) {
-        result[meritWithIndices[i].merit] = result[meritWithIndices[i].merit] || [];
-        result[meritWithIndices[i].merit].push(rewards[i]);
-    }
+  return result;
+}
 
-    return result;
+function calculateTransferAmount(duration, commitPrice) {
+  return (commitPrice * (duration + 300) / 300) * 0.8;
+}
+
+function calculateTransfers(activeUsersData) {
+  const negativeUsers = activeUsersData.filter(user => user.duration < 0)
+      .map(user => ({
+          ...user,
+          transferAmount: calculateTransferAmount(user.duration, user.commit_price)
+      }))
+      .sort((a, b) => b.transferAmount - a.transferAmount);
+
+  const positiveUsers = activeUsersData.filter(user => user.duration >= 0)
+      .sort((a, b) => b.streak_count - a.streak_count);
+
+  const totalStreaks = positiveUsers.reduce((sum, user) => sum + user.streak_count, 0);
+  const transfers = [];
+
+  if (!negativeUsers.length || !positiveUsers.length || totalStreaks === 0) return transfers;
+
+  for (const sender of negativeUsers) {
+      let remainingAmount = sender.transferAmount;
+      
+      for (const receiver of positiveUsers) {
+          if (remainingAmount <= 0) break;
+          
+          const weight = receiver.streak_count / totalStreaks;
+          const transferAmount = Math.min(remainingAmount, sender.transferAmount * weight);
+          
+          transfers.push({
+              from: { walletId: sender.wallet_id, accessToken: sender.access_token },
+              to: { walletId: receiver.wallet_id, accessToken: receiver.access_token },
+              amount: Number(transferAmount.toFixed(2))
+          });
+          
+          remainingAmount -= transferAmount;
+      }
+  }
+  return transfers;
 }
 
 fastify.get('/distribute-rewards', async (request, reply) => {
@@ -551,10 +586,10 @@ fastify.get('/distribute-rewards', async (request, reply) => {
     // get logs for each user and check if they have a log for today
     const { data: logs, error: logsError } = await supabase
         .from('logs')
-        .select('user_id, date, access_token')
+        .select('user_id, date, access_token, duration, commit_price')
         .in('user_id', users.map(user => user.user_id))
         .gte('date', today.toISOString())
-        .lt('date', new Date(today.getTime() + 86400000).toISOString());
+        .lt('date', new Date(today.getTime() + 86400000).toISOString());  
 
     if (logsError) {
         return reply.status(500).send({ error: "Error in getting logs", details: logsError.message });
@@ -562,7 +597,7 @@ fastify.get('/distribute-rewards', async (request, reply) => {
 
     // create a list of users who have a log for today
     const activeUserIds = new Set(logs.map(log => log.user_id));
-
+    
     // Combine all data for active users
     const activeUsersData = users
         .filter(user => activeUserIds.has(user.user_id))
@@ -572,11 +607,41 @@ fastify.get('/distribute-rewards', async (request, reply) => {
             return {
                 ...user,
                 streak_count: streak?.streak_count || 0,
-                access_token: log?.access_token
+                access_token: log?.access_token,
+                duration: log?.duration - 180,
+                commit_price: log?.commit_price
             };
         });
 
     console.log("Active users with data:", activeUsersData);
 
-    return reply.send(activeUsersData);
+    const transfers = calculateTransfers(activeUsersData);
+    console.log("Transfers:", transfers[0].from.walletId, transfers[0].to.walletId, transfers[0].amount);
+
+    // use access token, sender and buyer wallet id to send money
+    const client = await createAuthenticatedClient({
+        walletAddressUrl: CLIENT_WALLET,
+        privateKey: WALLET_PRIVATE_KEY,
+        keyId: WALLET_KEY_ID,
+    });
+
+    for (const transfer of transfers) {
+        const sendingWalletAddress = await client.walletAddress.get({ url: transfer.from.walletId });
+        const receivingWalletAddress = await client.walletAddress.get({ url: transfer.to.walletId });
+
+        const outgoingPayment = await sendMoney(
+            client,
+            sendingWalletAddress,
+            receivingWalletAddress,
+            transfer.amount * 100,
+            transfer.from.accessToken
+        );
+        console.log("Outgoing payment:", outgoingPayment);
+    }
+    
+    return reply.send({
+        activeUsers: activeUsersData,
+        transfers: transfers
+    });
+    
 });
