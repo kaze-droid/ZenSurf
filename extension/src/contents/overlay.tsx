@@ -55,12 +55,12 @@ const PlasmoPricingExtra = ({ domain }) => {
             dispatch(setBad());
             setAvatarMsg("Hmmmmmm, what is this website doing here?");
             return;
-        } 
+        }
         if (productivityAndCodingSites.includes(domain)) {
             dispatch(setGood());
             setAvatarMsg("Looking good!");
             return;
-        } 
+        }
 
         // Check for blocked content in all other cases
         const pageHTML = document.documentElement.innerText;
@@ -73,7 +73,7 @@ const PlasmoPricingExtra = ({ domain }) => {
                 const matches = pageHTML.match(regex);
                 return count + (matches ? matches.length : 0);
             }, 0);
-            
+
             // Theme is considered blocked if keywords appear at least 3 times
             return occurrences >= 3;
         });
@@ -100,56 +100,56 @@ const PlasmoPricingExtra = ({ domain }) => {
         if (avatarMsg !== "") {
             setTimeout(() => {
                 setAvatarMsg("");
-            }, 2000);
+            }, 10000);
         }
     }, [avatarMsg]);
 
     return (
         <>
-            <img
+            {avatarMsg !== "" && <img
                 id="catGif"
                 src={gifURLShow}
                 alt="Capybara GIF"
                 style={{
-                borderRadius: 8,
-                position: "absolute",
-                top: "10vh",
-                left: "90vw",
-                width: "10vw",
-                height: "10vw",
-                pointerEvents: "none"
-            }}
-            />
-            {avatarMsg !== "" && (
-                <>
-                <img
-                    id="chatBubble"
-                    src={chatBubble}
-                alt="Chat Bubble"
-                style={{
                     borderRadius: 8,
                     position: "absolute",
-                    top: "8vh",
-                    left: "80vw",
-                    width: "10vw",
-                    height: "10vw",
+                    top: "6vh",
+                    left: "90vw",
+                    width: "8vw",
+                    height: "8vw",
                     pointerEvents: "none"
                 }}
-            />
-            <div id="avatarMsg" style={{
-                borderRadius: 8,
-                position: "absolute",
-                top: "10vh",
-                left: "81vw",
-                    width: "8vw",
-                    height: "10vw",
-                    pointerEvents: "none",
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    fontSize: "1vw",
-                    color: "black",
-                }}>{avatarMsg}</div>
-            </>
+            />}
+            {avatarMsg !== "" && (
+                <>
+                    <img
+                        id="chatBubble"
+                        src={chatBubble}
+                        alt="Chat Bubble"
+                        style={{
+                            borderRadius: 8,
+                            position: "absolute",
+                            top: "4vh",
+                            left: "82vw",
+                            width: "10vw",
+                            height: "8vw",
+                            pointerEvents: "none"
+                        }}
+                    />
+                    <div id="avatarMsg" style={{
+                        borderRadius: 8,
+                        position: "absolute",
+                        top: "5vh",
+                        left: "83vw",
+                        width: "8vw",
+                        height: "8vw",
+                        pointerEvents: "none",
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        fontSize: "1vw",
+                        color: "black",
+                    }}>{avatarMsg}</div>
+                </>
             )}
         </>
     );

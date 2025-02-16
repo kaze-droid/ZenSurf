@@ -16,9 +16,9 @@ const TimeSpentHeatmap = ({ data }) => {
 
     const getColor = (timeSpent) => {
         if (!timeSpent) return 'bg-gray-100';
-        if (timeSpent < 1) return 'bg-orange-100';
-        if (timeSpent < 2) return 'bg-orange-200';
-        if (timeSpent < 4) return 'bg-orange-300';
+        if (timeSpent < 1 * 60) return 'bg-orange-100';
+        if (timeSpent < 2 * 60) return 'bg-orange-200';
+        if (timeSpent < 4 * 60) return 'bg-orange-300';
         return 'bg-orange-400';
     };
 
@@ -26,7 +26,7 @@ const TimeSpentHeatmap = ({ data }) => {
         const today = new Date();
         today.setDate(today.getDate() + 1);
         const startDate = new Date(today);
-        startDate.setDate(startDate.getDate() - 364);
+        startDate.setDate(startDate.getDate() - 180);
 
         const weeks = [];
         let currentWeek = [];

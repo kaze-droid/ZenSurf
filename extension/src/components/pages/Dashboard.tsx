@@ -4,9 +4,10 @@ import { useStorage } from "@plasmohq/storage/hook"
 import { curDate } from '~utils/dates';
 import type { SiteTime } from '~tracker/types';
 import TimeSpentHeatmap from '~components/ui/recharts/timeSpentHeatmap';
+import { Flame } from 'lucide-react';
 
 export default function Dashboard() {
-    const [allSitesTimes] = useStorage('allSitesTimes');
+    const [allSitesTimes, setAllSitesTimes] = useStorage('allSitesTimes', (v) => v === undefined ? {} : v);
 
     const isLockedInSite = (url: string) => {
         if (url === '$idle') return false;
@@ -24,7 +25,11 @@ export default function Dashboard() {
 
 
     const getDailyTotalString = useMemo(() => {
-        const dailyTimeLeftForStreak = (3 * 60) - dailyTimeSpent;
+        const dailyTimeLeftForStreak = Math.max((3 * 60) - dailyTimeSpent, 0);
+
+        if (dailyTimeLeftForStreak == 0) {
+            return `Daily Streak Completed!`;
+        }
         const dailyHoursSpent = Math.floor(dailyTimeLeftForStreak / 60);
         const dailyMinutesSpent = Math.trunc(dailyTimeLeftForStreak % 60);
 
@@ -34,7 +39,7 @@ export default function Dashboard() {
             return `${value} ${unit}${value !== 1 ? 's ' : ' '}`
         }
 
-        return `${TimeUnit(dailyHoursSpent, "hour")}${TimeUnit(dailyMinutesSpent, "minute")}`
+        return `Time left for streak: ${TimeUnit(dailyHoursSpent, "hour")}${TimeUnit(dailyMinutesSpent, "minute")}`
     }, [dailyTimeSpent]);
 
 
@@ -54,7 +59,7 @@ export default function Dashboard() {
     const timeSpentData = useMemo(() => {
         const endDate = new Date();
         const startDate = new Date(endDate);
-        startDate.setDate(startDate.getDate() - 384);
+        startDate.setDate(startDate.getDate() - 180);
 
         const allData = {};
 
@@ -99,12 +104,9 @@ export default function Dashboard() {
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[70%] h-full'>
                     <TimeSpentHeatmap data={timeSpentData} />
-
                 </div>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[30%] h-full'>
-
-
                 </div>
             </div>
 
@@ -113,10 +115,13 @@ export default function Dashboard() {
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[33%] h-full justify-center items-center'>
                     <LockedInChart data={lockedInData} colors={lockedInColors} height={300} width={300} />
-                    <div className='z-1 relative bottom-[3.25rem] text-muted font-mono'>Time Left for streak: {getDailyTotalString}</div>
+                    <div className='z-1 relative bottom-[3.25rem] text-muted font-mono'>{getDailyTotalString}</div>
                 </div>
 
-                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[33%] h-full'>
+                <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 pb-0 w-[33%] h-full items-center justify-center'>
+                    <Flame className="text-[#ec6453] h-36 w-36" />
+
+                    <div className='z-1 relative text-muted font-mono mt-3'>Achieved numDays streak</div>
                 </div>
 
 

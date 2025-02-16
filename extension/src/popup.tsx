@@ -38,38 +38,16 @@ function IndexPopup() {
         }
     }
     const getCurrentStreak = async () => {
-        let currentDate = new Date();
-        let streakCounter = 0;
+        const params = new URLSearchParams({
+            wallet_id: walletId
+        });
 
-        if (!walletId) return 0;
+        const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak?${params.toString()}`);
 
-        while (true) {
-            currentDate = new Date(currentDate.setDate(currentDate.getDate() - 1));
-            const formattedDate =
-                currentDate.toLocaleDateString('en-GB', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric'
-                }).toLowerCase().replace(/ /g, '-');
-
-
-            if (!allSitesTimes || !allSitesTimes[formattedDate]) {
-                await updateStreak(streakCounter);
-                return streakCounter;
-            }
-            const totalMinutes =
-                Math.floor(Object.values(allSitesTimes[formattedDate])
-                    .reduce<number>((acc: number, site: SiteTime) => {
-                        return acc + (isLockedInSite(site.url) ? site.totalMinutes : 0)
-                    }, 0));
-
-            if (totalMinutes >= 3 * 60) {
-                streakCounter += 1;
-            } else {
-                await updateStreak(streakCounter);
-                return streakCounter;
-            }
+        if (response) {
+            return response.data
         }
+
     }
 
     // Assign currentStreak to 0 initially

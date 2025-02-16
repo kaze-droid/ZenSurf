@@ -1,8 +1,8 @@
 import React from 'react'
 
-export default function Challenges() {
+export default function Leaderboard() {
     return (
-        <div>Challenges</div>
+        <div>Leaderboard</div>
     )
 }
 

@@ -9,6 +9,9 @@ interface LockedInChartProps extends RechartProps {
 }
 
 export default function LockedInChart({ colors, data, width, height, className }: LockedInChartProps) {
+    if (data[0].value > data[1].value) {
+        data[1].value = data[0].value
+    }
     return (
         <PieChart width={width} height={height} className={className}>
             {data.map((entry, index) => (
