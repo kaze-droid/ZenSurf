@@ -160,7 +160,8 @@ fastify.post("/new-user", async (request, reply) => {
 // Used to create a new record in log table
 fastify.post("/new-record", async (request, reply) => {
   // get user id from users table
-  const { wallet_id, duration_commit, duration, commit_price } = request.body;
+  const { wallet_id, duration_commit, duration, commit_price, accessToken } = request.body;
+  console.log("Request body:", request.body);
   // round duration_commit to int
   const roundedDurationCommit = Math.round(duration_commit);
   // round duration to int
@@ -203,7 +204,8 @@ fastify.post("/new-record", async (request, reply) => {
       .update({ 
         duration_commited: roundedDurationCommit, 
         duration: roundedDuration, 
-        commit_price: commit_price 
+        commit_price: commit_price,
+        access_token: accessToken
       })
       .eq('user_id', userData.user_id)
       .gte('date', today.toISOString())
@@ -216,7 +218,8 @@ fastify.post("/new-record", async (request, reply) => {
         user_id: userData.user_id, 
         duration_commited: roundedDurationCommit, 
         duration: roundedDuration, 
-        commit_price: commit_price 
+        commit_price: commit_price,
+        access_token: accessToken
       });
   }
 
@@ -492,4 +495,82 @@ fastify.listen({ port: 3000 }, (err, address) => {
         process.exit(1);
     }
     console.log(`Server running at ${address}`);
+});
+
+
+function distributeRewards(rewards, merit) {
+  // Sort the rewards array in descending order
+  rewards.sort((a, b) => b - a);
+  
+  // Sort the merit array in descending order, while keeping track of original indices
+  const meritWithIndices = merit.map((value, index) => ({ merit: value, index }));
+  meritWithIndices.sort((a, b) => b.merit - a.merit);
+
+  // Initialize the result object to store distributed rewards
+  const result = {};
+
+  // Distribute the rewards
+  for (let i = 0; i < meritWithIndices.length; i++) {
+      result[meritWithIndices[i].merit] = result[meritWithIndices[i].merit] || [];
+      result[meritWithIndices[i].merit].push(rewards[i]);
+  }
+
+  return result;
+}
+
+fastify.get('/distribute-rewards', async (request, reply) => {
+    // Get today's date in UTC and set time to start of day
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    // Start from users table and get all user_id and wallet_id
+    const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('user_id, wallet_id');
+
+    if (usersError) {
+        return reply.status(500).send({ error: "Error in getting users", details: usersError.message });
+    }
+
+    // get streaks for each user
+    const { data: streaks, error: streaksError } = await supabase
+        .from('streak')
+        .select('user_id, streak_count')
+        .in('user_id', users.map(user => user.user_id));
+
+    if (streaksError) {
+        return reply.status(500).send({ error: "Error in getting streaks", details: streaksError.message });
+    }
+
+    // get logs for each user and check if they have a log for today
+    const { data: logs, error: logsError } = await supabase
+        .from('logs')
+        .select('user_id, date, access_token')
+        .in('user_id', users.map(user => user.user_id))
+        .gte('date', today.toISOString())
+        .lt('date', new Date(today.getTime() + 86400000).toISOString());  
+
+    if (logsError) {
+        return reply.status(500).send({ error: "Error in getting logs", details: logsError.message });
+    }
+
+    // create a list of users who have a log for today
+    const activeUserIds = new Set(logs.map(log => log.user_id));
+    
+    // Combine all data for active users
+    const activeUsersData = users
+        .filter(user => activeUserIds.has(user.user_id))
+        .map(user => {
+            const streak = streaks.find(s => s.user_id === user.user_id);
+            const log = logs.find(l => l.user_id === user.user_id);
+            return {
+                ...user,
+                streak_count: streak?.streak_count || 0,
+                access_token: log?.access_token
+            };
+        });
+
+    console.log("Active users with data:", activeUsersData);
+    
+    return reply.send(activeUsersData);
 });
