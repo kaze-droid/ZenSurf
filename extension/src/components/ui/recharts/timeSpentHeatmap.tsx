@@ -18,8 +18,8 @@ const TimeSpentHeatmap = ({ data }) => {
         if (!timeSpent) return 'bg-gray-100';
         if (timeSpent < 1 * 60) return 'bg-orange-100';
         if (timeSpent < 2 * 60) return 'bg-orange-200';
-        if (timeSpent < 4 * 60) return 'bg-orange-300';
-        return 'bg-orange-400';
+        if (timeSpent < 3 * 60) return 'bg-orange-300';
+        return 'bg-orange-500';
     };
 
     const generateCalendarData = () => {

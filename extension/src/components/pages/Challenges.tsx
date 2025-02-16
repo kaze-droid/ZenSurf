@@ -9,6 +9,7 @@ import {
     TableHeader,
     TableRow,
 } from "~/components/ui/table"
+import { Top3Medal, AwardIcon } from '~components/icons';
 
 export default function Leaderboard() {
     const [leaderboardData, setLeaderboardData] = useState([]);
@@ -25,29 +26,46 @@ export default function Leaderboard() {
         getLeaderboardData();
     }, []);
 
-    console.log(leaderboardData);
+    const top3Colors = ["#ffd700", "#dadcd9", "#ce8946"]
+
 
     return (
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead className="w-[100px]">User</TableHead>
-                    <TableHead>Wallet Address</TableHead>
-                    <TableHead className="text-right">Current Streak</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {
-                    leaderboardData.map((datum, idx) => (
-                        <>
-                            <TableCell className="font-medium">{datum.user_id}</TableCell>
-                            <TableCell>{datum.wallet_id}</TableCell>
-                            <TableCell className="text-right">{datum.streak_count}</TableCell>
-                        </>
-                    ))
-                }
-            </TableBody>
-        </Table>
+        <div className='flex h-full w-full items-center justify-center'>
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Award</TableHead>
+                        <TableHead className="w-[100px]">User</TableHead>
+                        <TableHead>Wallet Address</TableHead>
+                        <TableHead>Current Streak</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {
+                        leaderboardData.sort((a, b) => b.streak_count - a.streak_count).slice(0, 3).map((datum, idx) => (
+                            <TableRow>
+                                <TableCell><Top3Medal fill={top3Colors[idx]} className='h-6 w-6' /></TableCell>
+                                <TableCell className="font-medium">{datum.user_id}</TableCell>
+                                <TableCell>{datum.wallet_id}</TableCell>
+                                <TableCell>{datum.streak_count}</TableCell>
+                            </TableRow>
+                        ))
+                    }
+
+
+                    {
+                        leaderboardData.sort((a, b) => b.streak_count - a.streak_count).slice(3, leaderboardData.length).map((datum, idx) => (
+                            <TableRow>
+                                <TableCell><AwardIcon fill="#fff" className='h-6 w-6' /></TableCell>
+                                <TableCell className="font-medium">{datum.user_id}</TableCell>
+                                <TableCell>{datum.wallet_id}</TableCell>
+                                <TableCell>{datum.streak_count}</TableCell>
+                            </TableRow>
+                        ))
+                    }
+                </TableBody>
+            </Table >
+        </div>
     )
 }
 

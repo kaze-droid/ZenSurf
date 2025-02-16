@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useMemo, useEffect, useState } from "react"
 import { Logo, RightArrow } from "~components/icons"
 import { usePort } from "@plasmohq/messaging/hook"
 import { curDate } from "~utils/dates"
@@ -23,6 +23,8 @@ function IndexPopup() {
     const [allSitesTimes] = useStorage('allSitesTimes');
     const [walletId] = useStorage<string>('walletId');
 
+    const [currentStreak, setCurrentStreak] = useState(0);
+
     const isLockedInSite = (url: string) => {
         if (url === '$idle') return false;
 
@@ -30,35 +32,26 @@ function IndexPopup() {
         return true;
     }
 
-    const updateStreak = async (streakCounter: number) => {
-        try {
-            const response = await axios.put(`${process.env.PLASMO_PUBLIC_SERVER_URL}/new-user-streak`, { wallet_id: walletId, streak_count: streakCounter },
-                { headers: { 'Content-Type': 'application/json' } });
-        } catch (err) {
-        }
-    }
-    const getCurrentStreak = async () => {
-        const params = new URLSearchParams({
-            wallet_id: walletId
-        });
+    useEffect(() => {
+        const getCurrentStreak = async () => {
+            if (!walletId) {
+                setCurrentStreak(0);
+                return;
+            }
 
-        const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak?${params.toString()}`);
+            try {
+                const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak/?wallet_id=${walletId}`);
+                if (response) {
+                    setCurrentStreak(response.data.streak_count);
+                }
+            } catch (error) {
+                console.error("Error calculating streak:", error);
+                setCurrentStreak(0);
+            }
+        };
 
-        if (response) {
-            return response.data
-        }
-
-    }
-
-    // Assign currentStreak to 0 initially
-    let currentStreak = 0;
-
-    // Update currentStreak once the async function completes
-    getCurrentStreak().then(streak => {
-        currentStreak = streak;
-    }).catch(error => {
-        console.error("Error calculating streak:", error);
-    });
+        getCurrentStreak();
+    }, [walletId]); // Add walletId as a dependency
 
     // Now currentStreak is 0 initially, and will be updated once the async function completes
 
