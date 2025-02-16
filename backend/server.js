@@ -30,7 +30,7 @@ async function sendMoney(client, senderWalletAddress, receiverWalletAddress, amo
         incomingAmount: {
             assetCode: receiverWalletAddress.assetCode,
             assetScale: receiverWalletAddress.assetScale,
-            value: String(amount)
+            value: String(Math.round(amount))
         }
     });
     console.log("Created incoming payment:", { id: incomingPayment.id });
@@ -618,6 +618,27 @@ fastify.get('/distribute-rewards', async (request, reply) => {
     const transfers = calculateTransfers(activeUsersData);
     console.log("Transfers:", transfers[0].from.walletId, transfers[0].to.walletId, transfers[0].amount);
 
+    // use access token, sender and buyer wallet id to send money
+    const client = await createAuthenticatedClient({
+        walletAddressUrl: CLIENT_WALLET,
+        privateKey: WALLET_PRIVATE_KEY,
+        keyId: WALLET_KEY_ID,
+    });
+
+    for (const transfer of transfers) {
+        const sendingWalletAddress = await client.walletAddress.get({ url: transfer.from.walletId });
+        const receivingWalletAddress = await client.walletAddress.get({ url: transfer.to.walletId });
+
+        const outgoingPayment = await sendMoney(
+            client,
+            sendingWalletAddress,
+            receivingWalletAddress,
+            transfer.amount * 100,
+            transfer.from.accessToken
+        );
+        console.log("Outgoing payment:", outgoingPayment);
+    }
+    
     return reply.send({
         activeUsers: activeUsersData,
         transfers: transfers
