@@ -11,6 +11,7 @@ import ActiveShapePieChart from '~components/ui/recharts/activeShapePieChart';
 export default function Dashboard() {
     const [allSitesTimes, setAllSitesTimes] = useStorage('allSitesTimes', (v) => v === undefined ? {} : v);
     const [walletId] = useStorage('walletId');
+    const [currentStreak, setCurrentStreak] = useState(0);
 
 
     const [donutSplitData, setDonutSplitData] = useState([]);
@@ -18,7 +19,6 @@ export default function Dashboard() {
     const isLockedInSite = (url: string) => {
         if (url === '$idle') return false;
 
-        // TODO: Implement using Ram's code
         return true;
     }
 
@@ -125,30 +125,26 @@ export default function Dashboard() {
         return allData;
     }, [allSitesTimes]);
 
-    const getCurrentStreak = async () => {
-        if (!walletId) return 0;
-        const params = new URLSearchParams({
-            wallet_id: walletId.split('/')[3]
-        });
+    useEffect(() => {
+        const getCurrentStreak = async () => {
+            if (!walletId) {
+                setCurrentStreak(0);
+                return;
+            }
 
-        const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak?${params.toString()}`);
+            try {
+                const response = await axios.get(`${process.env.PLASMO_PUBLIC_SERVER_URL}/get-streak/?wallet_id=${walletId}`);
+                if (response) {
+                    setCurrentStreak(response.data.streak_count);
+                }
+            } catch (error) {
+                console.error("Error calculating streak:", error);
+                setCurrentStreak(0);
+            }
+        };
 
-        if (response) {
-            return response.data
-        }
-
-    }
-
-    // Assign currentStreak to 0 initially
-    let currentStreak = 0;
-
-    // Update currentStreak once the async function completes
-    getCurrentStreak().then(streak => {
-        currentStreak = streak;
-    }).catch(error => {
-        console.error("Error calculating streak:", error);
-    });
-
+        getCurrentStreak();
+    }, [walletId]); // Add walletId as a dependency
     return (
         <div className='space-y-3 flex flex-col w-full h-full'>
             <div className='flex space-x-3 w-full h-[50%]'>
@@ -158,7 +154,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 w-[30%] h-full'>
-                    <h2 className="text-2xl bold font-serif">Money Earned</h2>
+                    <h2 className="text-3xl bold text-center">Money Earned: </h2>
+
+                    <span className='bold text-green-300 h-full text-center text-7xl mt-[4rem]'>↑ 7.54€</span>
                 </div>
 
             </div>
@@ -174,7 +172,7 @@ export default function Dashboard() {
                 <div className='flex flex-col bg-container rounded-md border border-2 border-container-outline p-8 pb-0 w-[33%] h-full items-center justify-center'>
                     <Flame fill="#ec6453" className="text-[#ec6453] h-36 w-36" />
 
-                    <div className='z-1 relative text-muted font-mono mt-6'>Achieved {currentStreak} day streak</div>
+                    <div className='z-1 relative text-muted font-mono mt-6'>Achieved <span className='bold text-lg'>{currentStreak}</span> day streak</div>
                 </div>
 
 
