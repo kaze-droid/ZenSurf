@@ -7,14 +7,20 @@ export class GlobalStore {
     private _allSitesTimes: string;
     private _allBlockedSites: string;
     private _accountDetails: string;
+    private _userGoal: string;
+    private _tmrGoal: string;
+    private _blockedTopics: string = "blockedTopics";
+    private _walletId: string = "walletId";
 
-    private _store: Store;
+    public _store: Store;
     private _secureStore: SecureStore;
 
     constructor(allSitesTimesKey: string, allBlockedSitesKey: string, accountDetailsKey: string) {
         this._allSitesTimes = allSitesTimesKey;
         this._allBlockedSites = allBlockedSitesKey;
         this._accountDetails = accountDetailsKey;
+        this._userGoal = "userGoal";
+        this._tmrGoal = "tmrGoal";
 
         this._store = new Store();
         this._secureStore = new SecureStore();
@@ -187,6 +193,43 @@ export class GlobalStore {
         }
 
         await this._store.setInStorage(this._allBlockedSites, currentSites);
+    }
+
+    // Goal related methods
+    public async getUserGoal(): Promise<string | null> {
+        const result = await this._store.getFromStorage(this._userGoal);
+        return typeof result === 'string' ? result : null;
+    }
+
+    public async setUserGoal(goal: string): Promise<void> {
+        await this._store.setInStorage(this._userGoal, goal);
+    }
+
+    public async getTmrGoal(): Promise<string | null> {
+        const result = await this._store.getFromStorage(this._tmrGoal);
+        return typeof result === 'string' ? result : null;
+    }
+
+    public async setTmrGoal(goal: string): Promise<void> {
+        await this._store.setInStorage(this._tmrGoal, goal);
+    }
+
+    public async removeTmrGoal(): Promise<void> {
+        await this._store.removeFromStorage(this._tmrGoal);
+    }
+
+    public async getBlockedTopics(): Promise<string[]> {
+        const topics = await this._store.getFromStorage(this._blockedTopics);
+        return Array.isArray(topics) ? topics : [];
+    }
+
+    public async getWalletId(): Promise<string | null> {
+        const result = await this._store.getFromStorage(this._walletId);
+        return typeof result === 'string' ? result : null;
+    }
+
+    public async setWalletId(walletId: string): Promise<void> {
+        await this._store.setInStorage(this._walletId, walletId);
     }
 
     // TODO: Add validation and getters and setters for each of the other methods
